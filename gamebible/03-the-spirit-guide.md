@@ -4,6 +4,8 @@ Agreed by Relic and Ember on November 20, 2026.
 
 Each player has a personal spirit guide, visible and audible only to that player, even in multiplayer.
 
+The guide's origin is decided in [section 06](06-cosmology-and-the-waking-world.md): a spark of the world's first fire, part of the player rather than an assigned helper.
+
 Default name: Ember. The player can rename the guide at character creation — the first screen before the world loads.
 
 ## Presence modes
@@ -21,8 +23,8 @@ Additional guide faces may exist later; Ember's is “one of the main faces.”
 
 ## Open questions / gaps
 
-- Guide dialogue content and trigger system.
-- How recipe teaching works mechanically.
+- Guide dialogue content and trigger/memory architecture remain open; contextual journey memory is decided in [section 06](06-cosmology-and-the-waking-world.md).
+- Recipe-teaching implementation details remain open; inventory-aware nudges, hints rather than answers, and a recipe book filled by the player's discoveries are decided in [section 06](06-cosmology-and-the-waking-world.md).
 - Summon/recall input.
 - Guide behavior in multiplayer sessions (while preserving private visibility and audibility).
 - Additional faces/skins.
