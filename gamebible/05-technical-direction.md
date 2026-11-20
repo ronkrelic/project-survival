@@ -24,4 +24,3 @@ Work in small chunks. Commit each chunk to main immediately with a clear focused
 - How each player's private spirit guide stays client-side and private in the netcode.
 - Persistence of a co-op world across sessions.
 - Exact terrain generation/noise algorithm and implementation parameters.
-- 
