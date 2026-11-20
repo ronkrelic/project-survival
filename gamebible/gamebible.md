@@ -7,6 +7,7 @@ Concept-phase design decisions agreed by Relic and Ember on November 20, 2026. T
 3. [The spirit guide](03-the-spirit-guide.md)
 4. [Gameplay systems](04-gameplay-systems.md)
 5. [Technical direction](05-technical-direction.md)
+6. [Cosmology and the waking world](06-cosmology-and-the-waking-world.md)
 
 [Concept art](../concept-art/) · [Project README](../README.md)
 
