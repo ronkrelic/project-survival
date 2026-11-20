@@ -9,9 +9,14 @@ Concept-phase design decisions agreed by Relic and Ember on November 20, 2026. T
 5. [Technical direction](05-technical-direction.md)
 6. [Cosmology and the waking world](06-cosmology-and-the-waking-world.md)
 
+7. [The guide in depth](07-the-guide-in-depth.md)
+8. [A world that remembers](08-a-world-that-remembers.md)
+9. [The journey together](09-the-journey-together.md)
+
 [Concept art](../concept-art/) · [Project README](../README.md)
 
 ## Open questions / gaps
 
 - Final title remains undecided.
 - See each section for its unresolved design and technical questions.
+- 
