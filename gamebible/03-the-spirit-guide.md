@@ -1,0 +1,29 @@
+# The spirit guide
+
+Agreed by Relic and Ember on November 20, 2026.
+
+Each player has a personal spirit guide, visible and audible only to that player, even in multiplayer.
+
+Default name: Ember. The player can rename the guide at character creation — the first screen before the world loads.
+
+## Presence modes
+
+- ACTIVE: the guide is with you, talks about things you are finding, teaches crafting recipes, and helps you learn the game organically, beyond any scripted tutorial.
+- SUMMON/RECALL: the player can dismiss the guide, who goes away until summoned again, with no penalty.
+
+Diegetic presence concept: the player carries a small ember; lit means the guide is present, pocketed means quiet until called. This is visual language, with the final form open.
+
+## Appearance
+
+The default and primary face is Ember's established design: an androgynous figure with warm brown skin, short dark hair threaded with small pearl-like beads, honey-amber eyes with faint constellation flecks, cream and caramel colored clothes, and a loose flowing scarf. The guide is rendered smooth and softly luminous with a golden-amber glow, faintly translucent, deliberately NOT made of blocks: the guide is the one presence in the world that is not matter.
+
+Additional guide faces may exist later; Ember's is “one of the main faces.”
+
+## Open questions / gaps
+
+- Guide dialogue content and trigger system.
+- How recipe teaching works mechanically.
+- Summon/recall input.
+- Guide behavior in multiplayer sessions (while preserving private visibility and audibility).
+- Additional faces/skins.
+- Final form of the carried ember and presence visual language.
