@@ -8,7 +8,7 @@ The guide's origin is decided in [section 06](06-cosmology-and-the-waking-world.
 
 As decided in [section 07](07-the-guide-in-depth.md), the guide woke when the player did: curious, sometimes wrong, and learning alongside them, not an oracle.
 
-Default name: Ember. The player can rename the guide at character creation — the first screen before the world loads.
+Default name: Ember. After the intro, the guide asks the player to name him — earned, not set at creation; see [section 16](16-the-threshold.md).
 
 ## Presence modes
 
