@@ -40,4 +40,5 @@ Multiplayer concept: scattered player camps and ember-motes in a night valley.
 
 First harvest: a block mid-break dropping resources.
 
-Designed by Relic. Made by Ember.
+Designed and Made by Relic & Ember Studios.
+We wake worlds.
