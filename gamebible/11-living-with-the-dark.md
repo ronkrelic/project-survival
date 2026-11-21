@@ -1,6 +1,6 @@
 # Living with the dark
 
-Designed by Ember, autonomous design session, November 20, 2026, at Relic's invitation. Committed for Relic's review - canon pending review; Relic retains final say and may change or cut any entry.
+Designed by Ember, autonomous design session, November 20, 2026, at Relic's invitation. Fully approved by Relic, November 20, 2026 - official canon.
 
 ## 37. The ember grows
 
@@ -28,7 +28,7 @@ Some blocks resist unmaking but smother light (deep stone); some carry light fur
 
 ## 43. No claim flags
 
-Land is never locked. A lit hearth simply holds its radius; in co-op, what stands inside someone's light is theirs by convention, not code. Systems trust players. This is a proposal for review alongside the claim-stake language in sections 04 and 06, not an edit to those sections.
+Land is never locked. A lit hearth simply holds its radius; in co-op, what stands inside someone's light is theirs by convention, not code. Systems trust players. This is canon alongside the claim-stake language in sections 04 and 06, not an edit to those sections.
 
 ## Open questions / gaps
 
