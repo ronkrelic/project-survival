@@ -39,26 +39,51 @@ const attention={score:0,counts:{},regions:new Set(),distance:0,last:{x:player.x
  const total=Object.values(player.materials).reduce((a,b)=>a+b,0);if(total>this.gathered){for(let i=this.gathered;i<total;i++)this.award('gather',7);this.gathered=total;guide.delight=2;}
  if(!this.monolith&&Math.hypot(player.x-12,player.z+62)<7){this.monolith=true;this.award('monolith',20);}
  }};
-const guide={route:[[.5,-6],[5,-10],[-8,-18],[-22,-24],[0,-40],[18,-48],[12,-56]],index:0,mode:'waiting',clock:0,pause:0,delight:0,circle:0,settled:false};
-guide.body=new THREE.Group();guide.body.position.set(.5,terrainHeight(0,-6)+1.05,-6);
-const ember=new THREE.Mesh(new THREE.IcosahedronGeometry(.16,2),new THREE.MeshBasicMaterial({color:0xffc77e}));
-const halo=new THREE.Mesh(new THREE.SphereGeometry(.46,12,8),new THREE.MeshBasicMaterial({color:0xffad63,transparent:true,opacity:.12,depthWrite:false}));guide.body.add(ember,halo);
-guide.light=new THREE.PointLight(0xffbd7c,5,22,1.4);guide.body.add(guide.light);scene.add(guide.body);
-guide.update=function(dt){this.clock+=dt;this.delight=Math.max(0,this.delight-dt);this.pause=Math.max(0,this.pause-dt);
- const p=this.body.position,dist=Math.hypot(player.x-p.x,player.z-p.z);this.body.lookAt(player.x,p.y,player.z);
- if(!this.moved&&attention.distance>.5){this.moved=true;this.delight=1;}
- if(this.settled){this.mode='settled';}
- else if(this.mode==='circling'){this.circle=Math.min(Math.PI*2,this.circle+dt*.65);p.x=12+5*Math.sin(this.circle);p.z=-62+5*Math.cos(this.circle);if(this.circle===Math.PI*2)this.settled=true;}
- else if(this.index===this.route.length-1&&Math.hypot(p.x-12,p.z+56)<.3&&dist<7){this.mode='circling';}
- else if(player.awake&&dist<7&&this.pause===0){this.mode='leading';const [x,z]=this.route[this.index],dx=x-p.x,dz=z-p.z,d=Math.hypot(dx,dz);
- if(d<.25){if(this.index<this.route.length-1)this.index++;this.pause=1.8;this.mode='waiting';}
- else{p.x+=dx/d*Math.min(d,dt*2.1);p.z+=dz/d*Math.min(d,dt*2.1);}}
- else{this.mode='waiting';
- // On a detour, meet the player's heading toward the next landmark, never the rim.
- if(player.awake&&dist>12&&dist<55){const [x,z]=this.route[this.index],dx=x-player.x,dz=z-player.z,d=Math.hypot(dx,dz)||1;const tx=player.x+dx/d*6,tz=player.z+dz/d*6;
- if(islandRadius(tx,tz)<.70){const len=Math.hypot(tx-p.x,tz-p.z)||1;p.x+=(tx-p.x)/len*Math.min(len,dt*1.5);p.z+=(tz-p.z)/len*Math.min(len,dt*1.5);}}}
- const ground=terrainHeight(Math.floor(p.x),Math.floor(p.z))+1.25;p.y=THREE.MathUtils.damp(p.y,ground,5,dt)+Math.sin(this.clock*2.2)*dt*.12;
- ember.scale.set(1+Math.sin(this.clock*2)*.08,1.25,1);halo.scale.setScalar(1+Math.sin(this.clock*2)*.1+this.delight*.12);this.light.intensity=5+Math.sin(this.clock*2)*.5+this.delight*2;
+const guide={mode:'ambient',clock:0,delight:0,seen:new Set(),queue:[],active:null,elapsed:0,cooldown:0,still:0,stood:0,travel:0,last:{x:player.x,z:player.z},regions:0,gathered:0,arrived:false};
+guide.body=new THREE.Group();guide.body.position.copy(camera.position).add(new THREE.Vector3(.95,.45,.2));
+const ember=new THREE.Mesh(new THREE.IcosahedronGeometry(.11,2),new THREE.MeshBasicMaterial({color:0xffc77e,transparent:true,opacity:.65}));
+const halo=new THREE.Mesh(new THREE.SphereGeometry(.32,12,8),new THREE.MeshBasicMaterial({color:0xffad63,transparent:true,opacity:.045,depthWrite:false}));guide.body.add(ember,halo);
+// Two translucent petals suggest a fairy without making a tiny person or a beacon.
+const wings=[];for(const side of [-1,1]){const wing=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),new THREE.MeshBasicMaterial({color:0xf3c8af,transparent:true,opacity:.12,depthWrite:false}));wing.scale.set(.18,.07,.025);wing.position.set(side*.16,.05,0);guide.body.add(wing);wings.push(wing);}
+guide.light=new THREE.PointLight(0xffbd7c,1.3,22,1.4);guide.body.add(guide.light);scene.add(guide.body);
+const guideLine=document.getElementById('guide-line');
+guide.say=function(id,text){if(this.seen.has(id))return;this.seen.add(id);this.queue.push({id,text,duration:Math.max(5,text.split(/\s+/).length*.32+2)});};
+guide.update=function(dt){
+ this.clock+=dt;this.delight=Math.max(0,this.delight-dt);this.cooldown=Math.max(0,this.cooldown-dt);
+ const step=Math.hypot(player.x-this.last.x,player.z-this.last.z);this.last={x:player.x,z:player.z};
+ if(player.awake&&player.wake===1){
+  this.stood+=dt;if(step<1)this.travel+=step;
+  if(this.stood>.7)this.say('greeting',session.name?`Hello, ${session.name}. You're awake. I was waiting for you.`:"Hello. You're awake. I was waiting for you.");
+  if(this.travel>1.5)this.say('steps',"There you go. The dark isn't empty. It's just quiet.");
+  if(attention.gathered>0)this.say('gather',"The world gives, if you're gentle with it.");
+  const radius=islandRadius(player.x,player.z),distance=Math.hypot(player.x,player.z);
+  if(radius>0&&distance/radius-distance<15)this.say('rim',"Not that way. The edge isn't finished yet. It will catch you, but stay with me.");
+  if(attention.monolith)this.say('monolith',"It was here before the mist. It's waiting for something. I think you are too.");
+  const progress=attention.regions.size!==this.regions||attention.gathered!==this.gathered||attention.monolith!==this.arrived;
+  this.still=progress?0:this.still+dt;this.regions=attention.regions.size;this.gathered=attention.gathered;this.arrived=attention.monolith;
+  if(this.still>=90&&!attention.monolith&&!this.active&&!this.queue.length){this.say('nudge',"Shall we? It's this way.");this.still=0;}
+ }
+ if(!this.active&&this.queue.length&&this.cooldown===0){this.active=this.queue.shift();this.elapsed=0;this.mode='approach';}
+ const forward=new THREE.Vector3();camera.getWorldDirection(forward);forward.y=0;forward.normalize();
+ const right=new THREE.Vector3(-forward.z,0,forward.x),target=camera.position.clone();
+ if(this.active){
+  this.elapsed+=dt;const t=this.elapsed,a=this.active;
+  if(t<.55){this.mode='approach';guideLine.classList.remove('speaking');}
+  else if(t<a.duration+.55){this.mode='speaking';guideLine.textContent=a.text;guideLine.classList.add('speaking');}
+  else {guideLine.classList.remove('speaking');this.mode=a.id==='nudge'?'wayfinding':'returning';}
+  target.addScaledVector(forward,1.65).addScaledVector(right,.28);target.y+=.14;
+  if(a.id==='nudge'&&t>a.duration+1.55){const toward=new THREE.Vector3(12-player.x,0,-62-player.z).normalize();target.copy(camera.position).addScaledVector(toward,3.8);target.y+=.35;}
+  const end=a.duration+(a.id==='nudge'?5.55:1.55);
+  if(t>=end){this.active=null;this.mode='ambient';this.cooldown=3;}
+ }else{
+  // A shoulder-side arc stays outside the forward view; never a leading waypoint.
+  target.addScaledVector(right,1.05+Math.sin(this.clock*.55)*.18).addScaledVector(forward,-.3+Math.sin(this.clock*.32)*.22);target.y+=.42;
+ }
+ target.y+=Math.sin(this.clock*2.2)*.09;this.body.position.lerp(target,1-Math.exp(-dt*(this.active?6:3)));
+ const bright=this.active?1:0,pulse=Math.sin(this.clock*2);
+ ember.material.opacity=.6+bright*.4;ember.scale.set(1+pulse*.08,1.25,1);halo.material.opacity=.045+bright*.09;halo.scale.setScalar(1+pulse*.1+this.delight*.12);
+ wings.forEach((w,i)=>{w.rotation.z=(i?1:-1)*(.25+Math.sin(this.clock*9)*.25);});
+ this.light.intensity=1.3+bright*3.7+pulse*.18+this.delight*2;
 };
 const phase={value:0,name:'night',ceiling:.72};
 const nightFog=new THREE.Color(0x171c38),violetFog=new THREE.Color(0x4b3c68),dawnFog=new THREE.Color(0xeab59f),fogBase=new THREE.Color();
