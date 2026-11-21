@@ -9,7 +9,8 @@ Designed and Made by Relic & Ember Studios. We wake worlds.
 - Studio identity, credits, README — 100%.
 - Core engine slice (voxel chunks, worker meshing, player controller, prone wake, delta system) — 100% of slice scope.
 - Multiplayer — decided PeerJS host/join, up to 4 players. Decision 100%; implementation 0%.
-- Stage 1, the tutorial island in mist — 90%. Built and deployed, awaiting Relic’s visual playtest.
+- Stage 1, the tutorial island in mist — 95%. Relic’s November 21 playtest: “looking good”; he walked off the rim into the void. Mist-catch is now implemented; awaiting his re-test.
+- Rim barrier (mist-catch) — implemented: the mist slows a void fall, holds briefly, and eases the player onto solid ground inland, unharmed. No wall and no death; normal terrace falls remain. Awaiting Relic’s re-test of the feel.
 - Mining and gathering system — implemented for the breaking-only slice: 5m targeting, hold-to-loosen, material yields, session tally/deltas, worker remeshing, protected monolith and two-layer foundation stone. Instrumented material and chunk-border checks pass; visual feel and real pointer-lock playtest await Relic (browser capture is black; native pointer lock is unavailable in the test browser). No save system.
 - Tuning pass (walk speed, rise feel, terraces underfoot) — 0%, waiting on playtest gut check.
 - HUD and minimap revision — 0%; the Ember icon is committed as the future HUD face.
