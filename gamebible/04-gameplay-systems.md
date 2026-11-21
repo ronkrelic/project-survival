@@ -18,7 +18,7 @@ Monoliths and the seasons of waking are decided progression direction in [sectio
 
 - Combat and enemy design remain deliberately deferred, including whether any combat exists; [section 06](06-cosmology-and-the-waking-world.md) establishes darkness and unmaking, not monsters, as the primary threat.
 - Death and respawn implementation details: [section 06](06-cosmology-and-the-waking-world.md) decides relighting at the last fire the player lit (campfire, hearth, or monolith), with carried items dropped where they fell and slowly unmaking in the dark. Item decay rates and whether anything else is lost remain open.
-- Crafting recipe lists and resource tiers.
+- Materials are rostered in [section 14](14-resources-and-materials.md), with progression direction in [section 15](15-the-ways-of-waking.md). Crafting recipes and detailed resource-tier implementation remain open.
 - Hunger/health mechanics and exact condition-to-glow mapping, including any secondary display; ember glow as the core condition display is decided in [section 07](07-the-guide-in-depth.md).
 - Save/persistence technical implementation remains open; [section 09](09-the-journey-together.md) decides that away fires burn down but never out, leaving a spark to relight from the ember on return. Burn-down rates and death-related fire state in multiplayer remain open.
 - Multiplayer direction and player scale are decided in [section 05](05-technical-direction.md): PeerJS host/join co-op for up to 4 players. World synchronization, host authority and session lifetime (including host departure/handoff), and co-op world persistence across sessions remain open.
