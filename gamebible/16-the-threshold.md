@@ -8,6 +8,8 @@ A small HANDMADE island, separate from and cut off from the infinite main world.
 
 The rim is the unfinished edge made visible. Land simply stops; below and beyond it is thick mist, the thin-place “not yet.” Half-made, smeared edges dissolve into that softness. It reads as a young world, never a wall enclosing a valley. Nothing beyond the island has been made yet.
 
+Step beyond the rim and the mist catches you. The fall softens; something bright and quiet holds you for a breath, then sets you on your feet a little inland. No hurt, no death, no wall. The unfinished edge of the world does not let you go yet.
+
 ## Crossing the threshold
 
 1. Wake in the dark, in a sheltered hollow on the island.
