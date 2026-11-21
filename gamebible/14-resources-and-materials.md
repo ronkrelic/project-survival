@@ -57,12 +57,21 @@ One signature per biome; each deepens when its monolith lights.
 
 Mothdust, warmdown, and lit-meadow feathers are sheds or findings only: gathered, never killed for. Hunting remains undecided in [section 08](08-a-world-that-remembers.md).
 
+## Gathering: matter loosens before it leaves
+
+Hold, rather than strike. A quick touch takes nothing. Earth gives after 0.4 seconds; leaves after 0.45, wood after 0.9, stone after 1.5. Teal and violet flora loosen after 0.4. The held block warms gently, small motes lifting before it comes apart. Released matter drifts toward us and fades; gathering is an invitation, not an impact. Let go or look away and the loosening settles back.
+
+For the playable slice, terrace grass yields earth; ochre and rose strata yield stone; trunks yield wood; leaves yield leaf bits; teal and violet flora each yield their own bits. A quiet carried-material line remembers these for this session. These are provisional gathering names, not new recipes or a decision on Relic's canyon-red name.
+
+Some things answer without leaving. The monolith hums and brightens under a held hand, but cannot be gathered. Beneath the island, two layers of dark, banded foundation stone also refuse unmaking. The floor is old enough to hold us. The gathering rules belong to blocks, not this island, ready for the realm beyond it. No placing, tools, crafting, or saving yet.
+
 ## Open questions / gaps
 
-- Yields and distribution.
-- Block tables.
+- Wider-world yields and distribution (slice yields above are implemented).
+- Wider-world block tables.
 - Canyon material name — reserved for Relic.
 - Stillwater uses.
 - Recipes.
 - Starfall mechanics.
 - Embercoal regeneration.
+- 
