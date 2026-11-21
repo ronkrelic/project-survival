@@ -6,7 +6,7 @@ All of the following direction was decided by Relic and Ember in conversation, N
 
 The world is newly made, newly waking. Embers are what it makes first: every player arrives carrying a spark of the world's own first fire, and that spark is a someone — the spirit guide. The guide is not assigned to the player; the guide is part of what the player is.
 
-Renaming the guide at character creation is not naming a helper. It is naming the part of yourself that talks.
+Naming the guide after the intro, as decided in [section 16](16-the-threshold.md), is not naming a helper. It is naming the part of yourself that talks.
 
 ## Darkness unmakes
 
