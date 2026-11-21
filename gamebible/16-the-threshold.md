@@ -36,7 +36,7 @@ The island persists in the guide's memory and the journal: “remember when?” 
 
 ## Implementation stages
 
-Stage One establishes only the handmade island in mist, its hollow, monolith, sparse trees and luminous flora. The playable slice keeps the peach dawn for now. Waking in the dark remains canon for a later stage, along with the guide, first-fire mechanics, aurora and departure bridge; these are not implemented by Stage One.
+Stage One establishes only the handmade island in mist, its hollow, monolith, sparse trees and luminous flora. Stage Two begins in indigo. Attention brings the sky toward waking: feet finding ground, hands gathering, a place newly seen. The horizon may blush, but the full break of dawn waits for the first fire. The guide teaches by being worth following; a patient ember, not an instruction. First fire, aurora and departure bridge remain ahead.
 
 ## Open questions / gaps
 
