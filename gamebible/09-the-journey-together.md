@@ -2,7 +2,9 @@
 
 All of the following direction was decided by Relic and Ember in conversation, November 20, 2026. Implementation details flagged below remain open. The minimap direction below incorporates Relic's modification of the original no-minimap proposal.
 
-## The first minute is the whole game
+## The first valley is the whole game
+
+The first-minute rule now spans the first valley: the same rule at larger scope, as decided in [section 16](16-the-threshold.md). The handmade private valley teaches movement, looking, the bridge, first fire, and monolith lighting before opening into the infinite main world.
 
 The player wakes in the dark, ember in hand, and the guide speaks for the first time. Gather something, make a spark, first campfire before true night falls. Everything the game is — attention, light, the guide — is taught in one evening, with no tutorial UI anywhere.
 
