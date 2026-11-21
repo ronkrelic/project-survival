@@ -18,9 +18,11 @@ Step beyond the rim and the mist catches you. The fall softens; something bright
 4. The monolith lighting, with its aurora, completes the island's introduction.
 5. A bridge leads off the island, through the mist into the infinite main world. Crossing is a one-way threshold, not a route back to the tutorial.
 
-Fully diegetic, with no tutorial UI: the first-minute rule grown into the first island. The bridge is the departure, not a second region hidden behind the rim.
+Beyond the naming threshold, no tutorial boxes: the first-minute rule grown into the first island. The bridge is the departure, not a second region hidden behind the rim.
 
 ## Naming is earned
+
+Before waking, the player may offer their own name while the world still assembles around the dark. The guide's name is not given here; it remains unearned.
 
 After the intro, the guide asks the player to name him. Naming is earned, not set at creation. This replaces the earlier rename-at-character-creation direction; see [section 03](03-the-spirit-guide.md).
 
@@ -36,7 +38,7 @@ The island persists in the guide's memory and the journal: “remember when?” 
 
 ## Implementation stages
 
-Stage One establishes only the handmade island in mist, its hollow, monolith, sparse trees and luminous flora. Stage Two begins in indigo. Attention brings the sky toward waking: feet finding ground, hands gathering, a place newly seen. The horizon may blush, but the full break of dawn waits for the first fire. The guide teaches by being worth following; a patient ember, not an instruction. First fire, aurora and departure bridge remain ahead.
+Stage One establishes only the handmade island in mist, its hollow, monolith, sparse trees and luminous flora. Stage Two begins in indigo. Attention brings the sky toward waking: feet finding ground, hands gathering, a place newly seen. The horizon may blush, but the full break of dawn waits for the first fire. The guide stays at your shoulder, a quiet fairy-light, easy to forget and never a leash. He speaks rarely, only when he flies in front of you; then the words fade and he returns to your side. First fire, aurora and departure bridge remain ahead.
 
 ## Open questions / gaps
 
