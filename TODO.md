@@ -10,7 +10,7 @@ Designed and Made by Relic & Ember Studios. We wake worlds.
 - Core engine slice (voxel chunks, worker meshing, player controller, prone wake, delta system) — 100% of slice scope.
 - Multiplayer — decided PeerJS host/join, up to 4 players. Decision 100%; implementation 0%.
 - Stage 1, the tutorial island in mist — 90%. Built and deployed, awaiting Relic’s visual playtest.
-- Mining and gathering system — in progress.
+- Mining and gathering system — implemented for the breaking-only slice: 5m targeting, hold-to-loosen, material yields, session tally/deltas, worker remeshing, protected monolith and two-layer foundation stone. Instrumented material and chunk-border checks pass; visual feel and real pointer-lock playtest await Relic (browser capture is black; native pointer lock is unavailable in the test browser). No save system.
 - Tuning pass (walk speed, rise feel, terraces underfoot) — 0%, waiting on playtest gut check.
 - HUD and minimap revision — 0%; the Ember icon is committed as the future HUD face.
 
@@ -23,8 +23,9 @@ Designed and Made by Relic & Ember Studios. We wake worlds.
 5. Co-op multiplayer.
 6. The open world beyond the bridge, infinite generation returns.
 7. Saving and persistence.
-8. Audio and sparse music.
+8. Broader audio and sparse music (only the gathering hum is implemented).
 9. Accessibility pass.
 10. Open design questions: food without hunting, what survives death, endgame, co-op permissions.
 11. Naming the canyon-red material, Relic’s call.
 12. GoFundMe campaign, once the tutorial slice is whole.
+13. 
