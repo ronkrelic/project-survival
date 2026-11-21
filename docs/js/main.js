@@ -29,7 +29,8 @@ for(let i=0;i<55;i++){
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 let last=performance.now();
 function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;world.update(player.x,player.z);if(world.loaded){renderer.domElement.style.visibility="visible";player.update(dt);mining.update(dt);}
- const rim=THREE.MathUtils.smoothstep(islandRadius(player.x,player.z),.55,1);scene.fog.density=.009+rim*.034;
+ const rim=THREE.MathUtils.smoothstep(islandRadius(player.x,player.z),.55,1);const held=player.mistStrength||0;scene.fog.density=.009+rim*.034+held*.075;
+ scene.fog.color.setHex(0xeab59f).lerp(new THREE.Color(0xffe5cf),held*.55);
  sky.position.copy(camera.position);renderer.render(scene,camera);}
 requestAnimationFrame(frame);
 // Read-only inspection seam for desktop smoke tests; never displayed in-world.
