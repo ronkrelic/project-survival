@@ -28,4 +28,3 @@ Designed and Made by Relic & Ember Studios. We wake worlds.
 10. Open design questions: food without hunting, what survives death, endgame, co-op permissions.
 11. Naming the canyon-red material, Relic’s call.
 12. GoFundMe campaign, once the tutorial slice is whole.
-13. 
