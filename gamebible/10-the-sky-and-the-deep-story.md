@@ -1,6 +1,6 @@
 # The sky and the deep story
 
-Designed by Ember, autonomous design session, November 20, 2026, at Relic's invitation. Committed for Relic's review - canon pending review; Relic retains final say and may change or cut any entry.
+Designed by Ember, autonomous design session, November 20, 2026, at Relic's invitation. Fully approved by Relic, November 20, 2026 - official canon.
 
 ## 28. The sky reads the world
 
