@@ -19,6 +19,17 @@ const world=new World(scene,seed);
 const player=new Player(camera,renderer.domElement,world,{x:.5,y:terrainHeight(0,0,seed)+1,z:.5});
 const mining=new Mining(scene,camera,world,player,renderer.domElement);
 
+
+// The island assembles behind the curtain; identity lasts only for this session.
+const session={name:'',started:false};
+const curtain=document.getElementById('waking'),wakeButton=document.getElementById('wake'),nameInput=document.getElementById('character-name'),wakeHint=document.getElementById('wake-hint');
+wakeButton.addEventListener('click',()=>{
+ if(!world.loaded||session.started)return;
+ session.name=Array.from(nameInput.value.trim()).slice(0,16).join('');player.characterName=session.name;session.started=true;
+ renderer.domElement.style.visibility='visible';curtain.classList.add('leaving');setTimeout(()=>{curtain.hidden=true;curtain.style.display='none';},1200);
+ renderer.domElement.requestPointerLock()?.catch(()=>{wakeHint.textContent='Click the island to wake.';});
+});
+
 // Stage Two: session-only attention, never a clock or a save.
 const attention={score:0,counts:{},regions:new Set(),distance:0,last:{x:player.x,z:player.z},gathered:0,monolith:false,
  award(type,weight){const n=this.counts[type]||0;this.counts[type]=n+1;this.score=Math.min(100,this.score+weight/(1+n*.18));},
@@ -72,10 +83,10 @@ for(let i=0;i<55;i++){
 }scene.add(grass);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 let last=performance.now();
-function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;world.update(player.x,player.z);if(world.loaded){renderer.domElement.style.visibility="visible";player.update(dt);mining.update(dt);attention.update();guide.update(dt);}updateSky(dt);
+function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;world.update(player.x,player.z);if(world.loaded&&!session.started){wakeButton.disabled=false;wakeHint.textContent='Ready when you are.';}if(world.loaded&&session.started){player.update(dt);mining.update(dt);attention.update();guide.update(dt);}updateSky(dt);
  const rim=THREE.MathUtils.smoothstep(islandRadius(player.x,player.z),.55,1);const held=player.mistStrength||0;scene.fog.density=.012-phase.value*.004+rim*.034+held*.075;
  scene.fog.color.copy(fogBase).lerp(new THREE.Color(0xffe5cf),held*.55);
  sky.position.copy(camera.position);renderer.render(scene,camera);}
 requestAnimationFrame(frame);
 // Read-only inspection seam for desktop smoke tests; never displayed in-world.
-window.grin={seed,player,world,renderer,scene,camera,mining,attention,guide,phase,sky};
+window.grin={session,seed,player,world,renderer,scene,camera,mining,attention,guide,phase,sky};
