@@ -9,7 +9,7 @@ const faces=[
  {n:[0,0,-1],v:[[0,0,0],[0,1,0],[1,1,0],[1,0,0]],shade:.7}
 ];
 // Linear-ish matte palette: sage teal, ochre, rose, basalt, bark, muted foliage.
-const palette=[[0,0,0],[.30,.52,.43],[.57,.36,.22],[.54,.30,.29],[.075,.09,.12],[.26,.20,.17],[.25,.40,.32]];
+const palette=[[0,0,0],[.30,.52,.43],[.57,.36,.22],[.54,.30,.29],[.075,.09,.12],[.26,.20,.17],[.25,.40,.32],[.18,.85,.78],[.64,.38,.88]];
 export function mesh(chunk,seed) {
  const {cx,cz,blocks,light}=chunk,positions=[],colors=[];
  const at=(x,y,z)=>y<0?2:y>=HEIGHT?0:(x>=0&&z>=0&&x<SIZE&&z<SIZE?blocks[index(x,y,z)]:voxelAt(cx*SIZE+x,y,cz*SIZE+z,seed));
