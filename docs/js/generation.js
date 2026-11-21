@@ -36,9 +36,13 @@ export function voxelAt(x,y,z,seed) {
   if(y<0)return 2; if(y>=HEIGHT)return 0;
   const h=terrainHeight(x,z,seed);
   if(y<=h)return y===h?1:(Math.floor(y/4)%2?2:3);
-  const m=landmarks(seed),base=terrainHeight(m.x,m.z,seed)+1;
-  if(Math.abs(x-m.x)<=2 && Math.abs(z-m.z)<=1 && y>=base && y<base+39)return 4;
+  const m=landmarks(seed);
+  if(Math.abs(x-m.x)<=2 && Math.abs(z-m.z)<=1){
+    const base=terrainHeight(m.x,m.z,seed)+1;
+    if(y>=base && y<base+39)return 4;
+  }
   const floating=island(x,y,z,seed); if(floating)return floating;
+  if(y>h+12)return 0;
   // Sparse rounded block canopies, indexed by cells so borders agree.
   const gx=Math.floor(x/18),gz=Math.floor(z/18);
   for(let a=gx-1;a<=gx+1;a++)for(let b=gz-1;b<=gz+1;b++) {
