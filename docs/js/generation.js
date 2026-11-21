@@ -1,5 +1,6 @@
 // Authored tutorial island: one metre per voxel. Seed is compatibility-only.
 export const SIZE=32, HEIGHT=112, MIN_CHUNK=-4, MAX_CHUNK=3;
+export const FOUNDATION_STONE=9;
 export const index=(x,y,z)=>(y*SIZE+z)*SIZE+x;
 export function hash(x,z,seed){let h=Math.imul(x,374761393)^Math.imul(z,668265263)^Math.imul(seed,1442695041);h=Math.imul(h^h>>>13,1274126177);return ((h^h>>>16)>>>0)/4294967295;}
 export function islandRadius(x,z){const a=Math.atan2(z,x);return Math.hypot(x,z)/(108+9*Math.cos(a*3)+5*Math.sin(a*2));}
@@ -18,6 +19,7 @@ export function voxelAt(x,y,z,seed){
  if(y<0||y>=HEIGHT||x<MIN_CHUNK*SIZE||x>=(MAX_CHUNK+1)*SIZE||z<MIN_CHUNK*SIZE||z>=(MAX_CHUNK+1)*SIZE)return 0;
  const h=terrainHeight(x,z);if(h<0)return 0;
  const bottom=14+Math.floor(islandRadius(x,z)*16);
+ if(y>=bottom&&y<bottom+2)return FOUNDATION_STONE;
  if(y>=bottom&&y<=h)return y===h?1:(Math.floor(y/4)%2?2:3);
  const m=landmarks();if(Math.abs(x-m.x)<=2&&Math.abs(z-m.z)<=1&&y>terrainHeight(m.x,m.z)&&y<terrainHeight(m.x,m.z)+48)return 4;
  if(y>h+10)return 0;
