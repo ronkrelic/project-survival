@@ -11,8 +11,7 @@ export function terrainHeight(x,z){
  // Broad hand-cut rings, one-block risers and a northward sightline.
  let h=36+Math.floor(Math.max(0,1-r)*8);
  const d=Math.hypot(x,z);
- if(d<26){const shelter=(z>2||Math.abs(x)>10)?Math.min(4,Math.floor(Math.max(0,d-7)/3)):0;h=40+shelter;}
- if(Math.abs(x-12)<12&&z<-48&&z>-77)h=43;
+ if(d<36){const shelter=(z>2||Math.abs(x)>10)?Math.min(4,Math.floor(Math.max(0,d-7)/3)):0;const bed=40+shelter;const blend=Math.max(0,Math.min(1,(d-20)/16));h=Math.floor(bed*(1-blend)+h*blend);}
  return h;
 }
 export function voxelAt(x,y,z,seed){
@@ -20,7 +19,7 @@ export function voxelAt(x,y,z,seed){
  const h=terrainHeight(x,z);if(h<0)return 0;
  const bottom=14+Math.floor(islandRadius(x,z)*16);
  if(y>=bottom&&y<=h)return y===h?1:(Math.floor(y/4)%2?2:3);
- const m=landmarks();if(Math.abs(x-m.x)<=2&&Math.abs(z-m.z)<=1&&y>43&&y<91)return 4;
+ const m=landmarks();if(Math.abs(x-m.x)<=2&&Math.abs(z-m.z)<=1&&y>terrainHeight(m.x,m.z)&&y<terrainHeight(m.x,m.z)+48)return 4;
  if(y>h+10)return 0;
  for(const [tx,tz] of trees){const th=terrainHeight(tx,tz),dx=x-tx,dz=z-tz;
  if(dx===0&&dz===0&&y>th&&y<=th+5)return 5;
