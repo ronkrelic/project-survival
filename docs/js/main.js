@@ -2,7 +2,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.m
 import {World} from './world.js';
 import {Player} from './player.js';
 import {terrainHeight,hash,islandRadius} from './generation.js';
-import './deltas.js';
+import {Mining} from './mining.js';
 const query=new URLSearchParams(location.search).get('seed');
 const requestedSeed=query!==null&&/^-?\d+$/.test(query)?Number(query)|0:73021;
 const seed=73021; // Handmade layout and decoration ignore requestedSeed.
@@ -17,6 +17,7 @@ const sky=new THREE.Mesh(new THREE.SphereGeometry(800,32,20),new THREE.ShaderMat
 scene.add(sky);
 const world=new World(scene,seed);
 const player=new Player(camera,renderer.domElement,world,{x:.5,y:terrainHeight(0,0,seed)+1,z:.5});
+const mining=new Mining(scene,camera,world,player,renderer.domElement);
 // A handful of matte grass blades at the bed: no HUD or click instruction.
 const grass=new THREE.Group(),mat=new THREE.MeshBasicMaterial({color:0x789c85,side:THREE.DoubleSide});
 for(let i=0;i<55;i++){
@@ -27,9 +28,9 @@ for(let i=0;i<55;i++){
 }scene.add(grass);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 let last=performance.now();
-function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;world.update(player.x,player.z);if(world.loaded){renderer.domElement.style.visibility="visible";player.update(dt);}
+function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;world.update(player.x,player.z);if(world.loaded){renderer.domElement.style.visibility="visible";player.update(dt);mining.update(dt);}
  const rim=THREE.MathUtils.smoothstep(islandRadius(player.x,player.z),.55,1);scene.fog.density=.009+rim*.034;
  sky.position.copy(camera.position);renderer.render(scene,camera);}
 requestAnimationFrame(frame);
 // Read-only inspection seam for desktop smoke tests; never displayed in-world.
-window.grin={seed,player,world,renderer,scene,camera};
+window.grin={seed,player,world,renderer,scene,camera,mining};
