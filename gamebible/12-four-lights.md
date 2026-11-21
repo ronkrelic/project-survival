@@ -20,7 +20,7 @@ In co-op, death relights you at your own last lit fire, or if none, at the sessi
 
 ## 48. Ember tints
 
-At character creation, alongside naming the guide, the player chooses their ember's tint: warm gold, teal, violet, rose. Cosmetic, theirs. In co-op, four colored lights in the dark are how you know who's who at a glance.
+At character creation (guide naming is earned after the intro; see [section 16](16-the-threshold.md)), the player chooses their ember's tint: warm gold, teal, violet, rose. Cosmetic, theirs. In co-op, four colored lights in the dark are how you know who's who at a glance.
 
 ## Open questions / gaps
 
