@@ -17,7 +17,7 @@ Waking fauna and footpaths are decided in [section 08](08-a-world-that-remembers
 ## Open questions / gaps
 
 - Full biome list and generation rules.
-- Block types and resource tables remain open; [section 08](08-a-world-that-remembers.md) decides that thin, half-made places hold the freshest, rarest matter and the deepest dark has the best ore. Resource distribution rules remain open.
+- The materials roster now exists in [section 14](14-resources-and-materials.md); yields, distribution, and block/resource tables remain open; [section 08](08-a-world-that-remembers.md) decides that thin, half-made places hold the freshest, rarest matter and the deepest dark has the best ore. Resource distribution rules remain open.
 - Day/night cycle parameters remain open; the core darkness-unmakes behavior is decided in [section 06](06-cosmology-and-the-waking-world.md), with unmaking rates, light radii, qualifying light sources, and build-sag rates/scope still open; unlit builds slowly leaning, settling, and collapsing is decided in [section 08](08-a-world-that-remembers.md).
 - Weather details beyond the regional softening from lit monoliths decided in [section 06](06-cosmology-and-the-waking-world.md).
 - World scale parameters, distance/attention measurement, and terrain-settling mechanics (unfinished-edges direction decided in [section 06](06-cosmology-and-the-waking-world.md)).
