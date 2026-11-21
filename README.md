@@ -42,3 +42,5 @@ First harvest: a block mid-break dropping resources.
 
 Designed and Made by Relic & Ember Studios.
 We wake worlds.
+
+Play the first minute: https://ronkrelic.github.io/project-survival/
