@@ -4,6 +4,7 @@ export class Player {
   this.camera=camera;this.world=world;this.canvas=canvas;
   this.x=spawn.x;this.y=spawn.y;this.z=spawn.z;this.visualY=this.y;
   this.yaw=0;this.pitch=-.035;this.vy=0;this.grounded=true;
+  this.home={...spawn};this.lastShore={...spawn};this.mistCatch=null;this.mistStrength=0;
   this.keys=new Set();this.wake=0;this.awake=false;
   canvas.addEventListener('click',()=>{canvas.requestPointerLock()?.catch(console.warn);});
   document.addEventListener('pointerlockchange',()=>{
@@ -34,10 +35,47 @@ export class Player {
    this.x=x;this.z=z;this.y+=1;this.vy=0;
   }
  }
+ // Only an empty column is the void: terrace drops keep their normal gravity.
+ hasGround(x,z) {
+  for(let y=111;y>=0;y--)if(this.world.block(Math.floor(x),y,Math.floor(z)))return true;
+  return false;
+ }
+ landing(x,z) {
+  for(let y=111;y>=0;y--)if(this.world.block(Math.floor(x),y,Math.floor(z))){
+   const feet=y+1;
+   if(this.clear(x,feet,z)&&[-.27,.27].every(dx=>[-.27,.27].every(dz=>this.world.block(Math.floor(x+dx),y,Math.floor(z+dz)))))return {x,y:feet,z};
+  }
+  return null;
+ }
+ catchMist() {
+  const edge=this.lastShore||this.home,len=Math.hypot(edge.x,edge.z)||1;
+  let target=null;
+  for(let d=1.8;d<=len+2&&!target;d+=.5){
+   const k=Math.max(0,1-d/len);target=this.landing(edge.x*k,edge.z*k);
+  }
+  target ||= this.landing(this.home.x,this.home.z);
+  if(!target)return; // Wait for the fixed island to finish loading.
+  this.mistCatch={t:0,from:{x:this.x,y:this.y,z:this.z},target};
+  this.vy=0;this.grounded=false;this.keys.clear();
+ }
+ updateMist(dt) {
+  const c=this.mistCatch;c.t=Math.min(1.65,c.t+dt);
+  const smooth=t=>t*t*(3-2*t),a=c.from,b=c.target;
+  if(c.t<.4){this.y=a.y-.18*smooth(Math.min(1,c.t/.2));}
+  else {
+   const u=smooth((c.t-.4)/1.25),lift=Math.max(a.y,b.y)+1.2;
+   this.x=a.x+(b.x-a.x)*u;this.z=a.z+(b.z-a.z)*u;
+   this.y=u<.5?(a.y-.18)+(lift-a.y+.18)*smooth(u*2):lift+(b.y-lift)*smooth((u-.5)*2);
+  }
+  this.mistStrength=Math.sin(Math.PI*c.t/1.65);
+  if(c.t===1.65){Object.assign(this,b);this.vy=0;this.grounded=true;this.lastShore={...b};this.mistCatch=null;this.mistStrength=0;}
+ }
  update(dt) {
   const locked=document.pointerLockElement===this.canvas;
   if(this.awake)this.wake=Math.min(1,this.wake+dt/2);
-  if(locked&&this.wake===1){
+  if(this.world.loaded&&!this.mistCatch&&(this.y<0||Math.abs(this.x)>=128||Math.abs(this.z)>=128||(!this.grounded&&!this.hasGround(this.x,this.z))))this.catchMist();
+  if(this.mistCatch)this.updateMist(dt);
+  else if(locked&&this.wake===1){
    let f=Number(this.keys.has('KeyW'))-Number(this.keys.has('KeyS'));
    let r=Number(this.keys.has('KeyD'))-Number(this.keys.has('KeyA'));
    const len=Math.hypot(f,r)||1;f/=len;r/=len;
@@ -46,7 +84,9 @@ export class Player {
    const n=Math.max(1,Math.ceil(dt/.012));
    for(let j=0;j<n;j++){
     this.grounded=!this.clear(this.x,this.y-.035,this.z);
+    if(this.grounded)this.lastShore={x:this.x,y:this.y,z:this.z};
     this.move(dx/n,0);this.move(0,dz/n);
+    if(!this.hasGround(this.x,this.z)){this.catchMist();break;}
     this.vy=Math.max(-30,this.vy-18*dt/n);
     const next=this.y+this.vy*dt/n;
     if(this.clear(this.x,next,this.z)){this.y=next;this.grounded=false;}
