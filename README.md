@@ -6,6 +6,8 @@ Status: concept phase — design bible and concept art first, first playable sli
 
 [Design gamebible](gamebible/gamebible.md)
 
+Concept art: 22 pieces (21 numbered concepts + the separate Ember icon).
+
 ![First-person dusk vista over terraced blocky terrain.](concept-art/ember-01-world-vista.jpg)
 
 First-person dusk vista over terraced blocky terrain.
