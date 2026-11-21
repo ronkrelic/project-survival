@@ -2,7 +2,7 @@
 
 A browser-based 3D first-person voxel survival game set in an infinite, procedurally generated world of small breakable blocks and varied biomes, where every player is accompanied by a personal spirit guide — a warm voice that teaches, comments, and can be summoned or dismissed.
 
-Status: concept phase — design bible and concept art first, first playable slice (infinite terrain) to follow.
+Status: concept phase — design bible and concept art, with a playable handmade tutorial island in mist.
 
 [Design gamebible](gamebible/gamebible.md)
 
