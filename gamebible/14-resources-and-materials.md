@@ -10,7 +10,7 @@ Settled matter is safe, common, and in the light; fresh matter is rare, powerful
 
 - Sparkstone strikes sparks.
 - Dryfiber comes from grass tufts.
-- Twigs complete the first-fire recipe: sparkstone + dryfiber + twigs. All three are needed.
+- In the threshold slice, three sparkstone and five dryfiber are enough. Twigs belong to the fuller evening beyond this small first ritual.
 
 ## Building materials
 
@@ -37,6 +37,10 @@ Settled matter is safe, common, and in the light; fresh matter is rare, powerful
 
 - Deepstone: stubborn and light-smothering; for frontier outposts.
 - Memory-ash brick: burned-fire ash brick that remembers being lit and resists unmaking. Ancient ash at monolith bases makes walls from the previous people's fires: idea 35 made holdable.
+
+## The first fire, in the threshold slice
+
+Pale sparkstone glints in six seams near the waking hollow. Grass gives earth and a little dryfiber. Bring three stones and five fibers to the cold circle; hold a steady hand there for two seconds. The gathered things become warmth, once, for this waking. No crafting bench, no menu. Only then may the rosy cusp become full dawn: a slow ninety-second opening.
 
 ## Regional signatures
 
