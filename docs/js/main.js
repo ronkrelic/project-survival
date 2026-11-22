@@ -37,6 +37,27 @@ const player=new Player(camera,renderer.domElement,world,{x:.5,y:terrainHeight(0
 const mining=new Mining(scene,camera,world,player,renderer.domElement);
 
 
+import {World} from './world.js';
+import {Player} from './player.js';
+import {terrainHeight,hash,islandRadius,sparkNodes} from './generation.js';
+import {Mining} from './mining.js';
+const query=new URLSearchParams(location.search).get('seed');
+const requestedSeed=query!==null&&/^-?\d+$/.test(query)?Number(query)|0:73021;
+const seed=73021; // Handmade layout and decoration ignore requestedSeed.
+const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0xeab59f,.009);
+const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.08,950);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;document.body.appendChild(renderer.domElement);renderer.domElement.style.visibility="hidden";
+document.body.style.background="#090d20";
+// Camera-centred dome, peach horizon to indigo zenith, with a broad low sun.
+const sky=new THREE.Mesh(new THREE.SphereGeometry(800,32,20),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:{},vertexShader:`varying vec3 ray;void main(){ray=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`varying vec3 ray;void main(){vec3 d=normalize(ray);float t=pow(max(d.y,0.),.48);vec3 c=mix(vec3(.92,.65,.54),vec3(.15,.18,.34),t);vec3 sun=normalize(vec3(.26,.075,-1.));float a=max(dot(d,sun),0.);c+=vec3(.18,.09,.035)*pow(a,60.)+vec3(.25,.16,.07)*pow(a,1600.);c=mix(vec3(.92,.71,.62),c,smoothstep(-.10,.16,d.y));gl_FragColor=vec4(c,1.);}` }));
+scene.add(sky);
+const world=new World(scene,seed);
+const player=new Player(camera,renderer.domElement,world,{x:.5,y:terrainHeight(0,0,seed)+1,z:.5});
+const mining=new Mining(scene,camera,world,player,renderer.domElement);
+
+
 // The island assembles behind the curtain; identity lasts only for this session.
 const session={name:'',started:false};
 const curtain=document.getElementById('waking'),wakeButton=document.getElementById('wake'),nameInput=document.getElementById('character-name'),wakeHint=document.getElementById('wake-hint');
@@ -148,11 +169,39 @@ function updateRitual(dt){ritual.clock+=dt;const near=Math.hypot(player.x-ritual
  aurora.visible=ritual.lit;aurora.children.forEach((r,i)=>{r.material.opacity=.12*Math.min(1,ritual.elapsed/30);const p=r.geometry.attributes.position;for(let j=0;j<p.count;j++){const x=p.getX(j),y=p.getY(j);p.setZ(j,Math.sin(x*.16+ritual.clock*.22+i+y*.06)*2.7);}p.needsUpdate=true;});
 }
 
+
+// The threshold is authored geometry, not another generated region.
+const crossing={manifest:0,named:false,name:'',offered:false,crossed:false,furthest:-100,clock:0};
+const bridge=new THREE.Group(),shore=new THREE.Group();scene.add(bridge,shore);bridge.visible=shore.visible=false;
+const decks=[];const bridgeY=z=>36+Math.floor(Math.sin(Math.PI*Math.max(0,Math.min(1,(-z-100)/46)))*3);
+for(let z=-100;z>=-146;z--){const mat=new THREE.MeshBasicMaterial({color:0x9e8b90,transparent:true,opacity:0});const deck=new THREE.Mesh(new THREE.BoxGeometry(3,.95,1.03),mat);deck.position.set(12,bridgeY(z)+.5,z+.5);bridge.add(deck);decks.push(deck);}
+const grass=new THREE.Mesh(new THREE.CylinderGeometry(10,8,3,14),new THREE.MeshBasicMaterial({color:0x86a48b}));grass.position.set(12,35.5,-156);shore.add(grass);
+for(const [x,z] of [[8,-156],[17,-160]]){const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.35,.5,4,6),new THREE.MeshBasicMaterial({color:0x927866}));trunk.position.set(x,39,z);const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(2.8,1),new THREE.MeshBasicMaterial({color:0x8ba48a}));crown.position.set(x,42,z);shore.add(trunk,crown);}
+const naming=document.createElement('div');naming.id='guide-naming';naming.hidden=true;naming.style.cssText='position:fixed;inset:0;z-index:30;background:#11152be8;color:#f3cbb7;display:none;place-content:center;text-align:center;font:18px Georgia,serif';naming.innerHTML='<label for="guide-name">A name to carry onward</label><input id="guide-name" value="Ember" maxlength="16" style="margin:22px auto;padding:12px;background:#27263a;color:#f3cbb7;border:1px solid #9b7f83;font:inherit;text-align:center"><button id="accept-guide-name" style="padding:12px;background:#e7bba4;color:#27263a;border:0;font:inherit">Give this name</button>';document.body.append(naming);
+function acceptGuideName(){const input=document.getElementById('guide-name');const name=Array.from(input.value.trim()).slice(0,16).join('');if(!name){input.value='Ember';input.focus();return;}crossing.name=name;crossing.named=true;guide.name=name;guide.delight=6;guide.say('given-name',name+'.');guide.say('keep-name',"I'll keep it.");naming.hidden=true;naming.style.display='none';renderer.domElement.requestPointerLock()?.catch(()=>{});}
+document.getElementById('accept-guide-name').onclick=acceptGuideName;
+const baseBlock=world.block.bind(world);world.block=function(x,y,z){
+ if(crossing.manifest>=1){
+ if(!crossing.named&&x>=10&&x<=14&&z===-101&&y>=36&&y<=43)return 9;
+ if(x>=11&&x<=13&&z<=-100&&z>=-146&&y===bridgeY(z)&&(!crossing.crossed||z<=crossing.furthest+3))return 9;
+ if((x-12)**2+(z+156)**2<=90&&y>=34&&y<=36)return 9;
+ }return baseBlock(x,y,z);};
+const baseCatch=player.catchMist.bind(player);player.catchMist=function(){if(!crossing.crossed)return baseCatch();const target=this.landing(12,-156);if(!target)return;this.mistCatch={t:0,from:{x:this.x,y:this.y,z:this.z},target};this.vy=0;this.grounded=false;this.keys.clear();};
+function updateCrossing(dt){crossing.clock+=dt;if(phase.value!==1)return;
+ crossing.manifest=Math.min(1,crossing.manifest+dt/7);bridge.visible=shore.visible=true;player.realmLimit=190;
+ if(crossing.manifest===1)guide.say('way-open',"The way is open. It only goes forward.");
+ if(!crossing.named&&!crossing.offered&&crossing.manifest===1&&Math.hypot(player.x-12,player.z+98)<6){crossing.offered=true;guide.say('ask-name',"You've come all this way with me, and I never told you my name. I don't have one yet. Would you give me one?");}
+ if(crossing.offered&&!crossing.named&&guide.active?.id==='ask-name'&&guide.mode==='speaking'&&guide.elapsed>guide.active.duration){naming.hidden=false;naming.style.display='grid';document.exitPointerLock();document.getElementById('guide-name').focus();}
+ if(crossing.named&&player.z<-103&&Math.abs(player.x-12)<2){crossing.crossed=true;crossing.furthest=Math.min(crossing.furthest,player.z);}
+ if(crossing.crossed&&player.z<-146){player.home={x:12,y:37,z:-156};crossing.furthest=-151;}
+ decks.forEach(d=>{const gone=crossing.crossed&&d.position.z>crossing.furthest+3;d.material.opacity=THREE.MathUtils.damp(d.material.opacity,gone?0:crossing.manifest,2,dt);d.position.y=bridgeY(Math.floor(d.position.z))+.5-(1-crossing.manifest)*3;});
+}
+
 let last=performance.now();
-function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;world.update(player.x,player.z);if(world.loaded&&!session.started){wakeButton.disabled=false;wakeHint.textContent='Ready when you are.';}if(world.loaded&&session.started){player.update(dt);updateRitual(dt);mining.update(dt);attention.update();guide.update(dt);}updateSky(dt);
- const rim=THREE.MathUtils.smoothstep(islandRadius(player.x,player.z),.55,1);const held=player.mistStrength||0;scene.fog.density=.012-phase.value*.004+rim*.034+held*.075;
+function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;world.update(player.x,player.z);if(world.loaded&&!session.started){wakeButton.disabled=false;wakeHint.textContent='Ready when you are.';}if(world.loaded&&session.started){player.update(dt);updateRitual(dt);updateCrossing(dt);mining.update(dt);attention.update();guide.update(dt);}updateSky(dt);
+ const rim=crossing.manifest>0&&player.z<-96?0:THREE.MathUtils.smoothstep(islandRadius(player.x,player.z),.55,1);const held=player.mistStrength||0;scene.fog.density=.012-phase.value*.004+rim*.034+held*.075;
  scene.fog.color.copy(fogBase).lerp(new THREE.Color(0xffe5cf),held*.55);
  sky.position.copy(camera.position);renderer.render(scene,camera);}
 requestAnimationFrame(frame);
 // Read-only inspection seam for desktop smoke tests; never displayed in-world.
-window.grin={session,seed,player,world,renderer,scene,camera,mining,attention,guide,phase,sky,ritual,hearth,aurora,updateRitual,updateSky};
+window.grin={session,seed,player,world,renderer,scene,camera,mining,attention,guide,phase,sky,ritual,hearth,aurora,updateRitual,updateSky,crossing,bridge,shore,updateCrossing,acceptGuideName};
