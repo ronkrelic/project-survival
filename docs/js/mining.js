@@ -49,7 +49,7 @@ export class Mining{
      const progress=Math.min(1,this.elapsed/seconds);
      this.glow.material.opacity=.03+.14*progress;this.outline.material.opacity=.28+.2*progress;
      if(Math.floor(this.clock*14)!==Math.floor((this.clock-dt)*14))this.mote(t);
-     if(this.elapsed>=seconds){const removed=this.world.remove(t.x,t.y,t.z);if(removed){const name=materials[removed].yield;this.player.materials[name]=(this.player.materials[name]||0)+1;this.tally.textContent='Carried: '+Object.entries(this.player.materials).map(([k,v])=>k+' '+v).join(' · ');for(let i=0;i<14;i++)this.mote(t,true);}this.elapsed=0;this.target=null;}
+     if(this.elapsed>=seconds){const removed=this.world.remove(t.x,t.y,t.z);if(removed){const name=materials[removed].yield;this.player.materials[name]=(this.player.materials[name]||0)+1;if(removed===1)this.player.materials.dryfiber=(this.player.materials.dryfiber||0)+1;this.tally.textContent='Carried: '+Object.entries(this.player.materials).map(([k,v])=>k+' '+v).join(' · ');for(let i=0;i<14;i++)this.mote(t,true);}this.elapsed=0;this.target=null;}
     }else{this.glow.material.opacity=.045+.02*Math.sin(this.clock*5);hum=.018;}
    }else{this.glow.material.opacity=.018;this.outline.material.opacity=.28;}
   }else this.elapsed=0;
