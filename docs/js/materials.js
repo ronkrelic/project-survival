@@ -8,6 +8,7 @@ export const materials=Object.freeze({
  6:{name:'leaves',yield:'leaf bits',seconds:.45,color:0x8ba48a},
  7:{name:'teal flora',yield:'teal flora bits',seconds:.4,color:0x8abbb2},
  8:{name:'violet flora',yield:'violet flora bits',seconds:.4,color:0xb2a0bb},
+ 10:{name:'sparkstone',yield:'sparkstone',seconds:1.5,color:0xe3dfb9},
  9:{name:'foundation stone',seconds:Infinity,color:0x8c7378}
 });
 export const breakable=id=>Number.isFinite(materials[id]?.seconds);
