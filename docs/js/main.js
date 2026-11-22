@@ -90,12 +90,12 @@ const nightFog=new THREE.Color(0x171c38),violetFog=new THREE.Color(0x4b3c68),daw
 sky.material.uniforms.progress={value:0};
 sky.material.fragmentShader=sky.material.fragmentShader.replace('varying vec3 ray;','uniform float progress;varying vec3 ray;').replace('gl_FragColor=vec4(c,1.);','vec3 night=mix(vec3(.025,.031,.075),vec3(.009,.013,.038),t);vec3 violet=mix(vec3(.29,.18,.36),vec3(.055,.045,.14),t);vec3 early=mix(night,violet,smoothstep(0.,.38,progress));c=mix(early,c,smoothstep(.38,1.,progress));gl_FragColor=vec4(c,1.);');
 // Preserve the baked matte voxel shading and luminous flora, but tint terrain at night.
-world.material.onBeforeCompile=shader=>{shader.uniforms.phaseLight={value:0};shader.uniforms.emberPosition={value:guide.body.position};world.material.userData.shader=shader;
+world.material.onBeforeCompile=shader=>{shader.uniforms.phaseLight={value:0};shader.uniforms.firstFire={value:0};shader.uniforms.emberPosition={value:guide.body.position};world.material.userData.shader=shader;
  shader.vertexShader='varying vec3 islandPosition;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nislandPosition=(modelMatrix*vec4(position,1.)).xyz;');
- shader.fragmentShader='uniform float phaseLight;uniform vec3 emberPosition;varying vec3 islandPosition;\n'+shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat flora=step(.65,max(diffuseColor.g,diffuseColor.b))*step(diffuseColor.r,.7);float warmth=pow(max(0.,1.-distance(islandPosition,emberPosition)/18.),2.);vec3 ambient=mix(vec3(.14,.17,.30),vec3(.78,.70,.79),phaseLight);diffuseColor.rgb*=mix(ambient+warmth*vec3(1.15,.65,.24),vec3(.9),flora);');};
+ shader.fragmentShader='uniform float firstFire;uniform float phaseLight;uniform vec3 emberPosition;varying vec3 islandPosition;\n'+shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat flora=step(.65,max(diffuseColor.g,diffuseColor.b))*step(diffuseColor.r,.7);float warmth=pow(max(0.,1.-distance(islandPosition,emberPosition)/18.),2.);vec3 ambient=mix(vec3(.14,.17,.30),vec3(.78,.70,.79),phaseLight);diffuseColor.rgb*=mix(ambient+warmth*vec3(1.15,.65,.24)+firstFire*pow(max(0.,1.-distance(islandPosition,vec3(6.,41.,-6.))/15.),2.)*vec3(1.6,.65,.2),vec3(.9),flora);');};
 function updateSky(dt){if(ritual.lit){ritual.elapsed=Math.min(90,ritual.elapsed+dt);const t=ritual.elapsed/90;phase.value=ritual.start+(1-ritual.start)*(t*t*(3-2*t));}else {phase.value=THREE.MathUtils.damp(phase.value,attention.score/100*phase.ceiling,.35,dt);phase.value=Math.min(phase.ceiling,phase.value);}phase.name=phase.value===1?'full dawn':phase.value<.22?'night':phase.value<.56?'violet pre-dawn':'rosy cusp';sky.material.uniforms.progress.value=phase.value;
  fogBase.copy(nightFog).lerp(violetFog,Math.min(1,phase.value/.38));if(phase.value>.38)fogBase.lerp(dawnFog,(phase.value-.38)/.62);
- if(world.material.userData.shader)world.material.userData.shader.uniforms.phaseLight.value=phase.value;
+ if(world.material.userData.shader){world.material.userData.shader.uniforms.phaseLight.value=phase.value;world.material.userData.shader.uniforms.firstFire.value=ritual.lit?1:0;}
 }
 
 // A handful of matte grass blades at the bed: no HUD or click instruction.
@@ -127,7 +127,7 @@ function updateRitual(dt){ritual.clock+=dt;const near=Math.hypot(player.x-ritual
  if(!ritual.lit&&aiming&&ritual.enough()&&mining.held&&document.pointerLockElement===renderer.domElement){ritual.hold+=dt;mining.elapsed=0;if(ritual.hold>=2)ritual.light();}else ritual.hold=0;
  flames.forEach((f,i)=>{f.visible=ritual.lit;f.scale.set(1+Math.sin(ritual.clock*3+i)*.1,1+Math.sin(ritual.clock*4+i)*.16,1);});fireLight.intensity=ritual.lit?5+Math.sin(ritual.clock*5)*.3+Math.max(0,1-ritual.elapsed)*8:0;
  sparks.forEach((s,i)=>{s.visible=ritual.lit;const a=(ritual.clock*.3+i/12)%1;s.position.set(Math.sin(i*5+a)*.4,.3+a*2,Math.cos(i*7+a)*.4);s.material.opacity=1-a;});
- glints.forEach((g,i)=>{const [x,z]=sparkNodes[i];g.visible=world.block(x,terrainHeight(x,z)-1,z)===10;g.material.opacity=.25+.2*Math.sin(ritual.clock*1.7+i);});
+ glints.forEach((g,i)=>{const [x,z]=sparkNodes[i];g.visible=world.block(x,terrainHeight(x,z),z)===10;g.material.opacity=.25+.2*Math.sin(ritual.clock*1.7+i);});
  aurora.visible=ritual.lit;aurora.children.forEach((r,i)=>{r.material.opacity=.12*Math.min(1,ritual.elapsed/30);const p=r.geometry.attributes.position;for(let j=0;j<p.count;j++){const x=p.getX(j),y=p.getY(j);p.setZ(j,Math.sin(x*.16+ritual.clock*.22+i+y*.06)*2.7);}p.needsUpdate=true;});
 }
 
@@ -145,7 +145,7 @@ document.getElementById('accept-guide-name').onclick=acceptGuideName;
 const baseBlock=world.block.bind(world);world.block=function(x,y,z){
  if(crossing.manifest>=1){
  if(!crossing.named&&x>=10&&x<=14&&z===-101&&y>=36&&y<=43)return 9;
- if(x>=11&&x<=13&&z<=-100&&z>=-146&&y===bridgeY(z)&&(!crossing.crossed||z<=crossing.furthest+3))return 9;
+ if(crossing.named&&x>=11&&x<=13&&z<=-100&&z>=-146&&y===bridgeY(z)&&(!crossing.crossed||z<=crossing.furthest+3))return 9;
  if((x-12)**2+(z+156)**2<=90&&y>=34&&y<=36)return 9;
  }return baseBlock(x,y,z);};
 const baseCatch=player.catchMist.bind(player);player.catchMist=function(){if(!crossing.crossed)return baseCatch();const target=this.landing(12,-156);if(!target)return;this.mistCatch={t:0,from:{x:this.x,y:this.y,z:this.z},target};this.vy=0;this.grounded=false;this.keys.clear();};
@@ -154,7 +154,7 @@ function updateCrossing(dt){crossing.clock+=dt;if(phase.value!==1)return;
  if(crossing.manifest===1)guide.say('way-open',"The way is open. It only goes forward.");
  if(!crossing.named&&!crossing.offered&&crossing.manifest===1&&Math.hypot(player.x-12,player.z+98)<6){crossing.offered=true;guide.say('ask-name',"You've come all this way with me, and I never told you my name. I don't have one yet. Would you give me one?");}
  if(crossing.offered&&!crossing.named&&guide.active?.id==='ask-name'&&guide.mode==='speaking'&&guide.elapsed>guide.active.duration){naming.hidden=false;naming.style.display='grid';document.exitPointerLock();document.getElementById('guide-name').focus();}
- if(crossing.named&&player.z<-103&&Math.abs(player.x-12)<2){crossing.crossed=true;crossing.furthest=Math.min(crossing.furthest,player.z);}
+ if(crossing.named&&player.z<-112&&Math.abs(player.x-12)<2){crossing.crossed=true;crossing.furthest=Math.min(crossing.furthest,player.z);}
  if(crossing.crossed&&player.z<-146){player.home={x:12,y:37,z:-156};crossing.furthest=-151;}
  decks.forEach(d=>{const gone=crossing.crossed&&d.position.z>crossing.furthest+3;d.material.opacity=THREE.MathUtils.damp(d.material.opacity,gone?0:crossing.manifest,2,dt);d.position.y=bridgeY(Math.floor(d.position.z))+.5-(1-crossing.manifest)*3;});
 }
