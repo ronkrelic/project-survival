@@ -1,44 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 import {World} from './world.js';
 import {Player} from './player.js';
-import {terrainHeight,hash,islandRadius} from './generation.js';
-import {Mining} from './mining.js';
-const query=new URLSearchParams(location.search).get('seed');
-const requestedSeed=query!==null&&/^-?\d+$/.test(query)?Number(query)|0:73021;
-const seed=73021; // Handmade layout and decoration ignore requestedSeed.
-const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0xeab59f,.009);
-const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.08,950);
-const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);
-renderer.outputColorSpace=THREE.SRGBColorSpace;document.body.appendChild(renderer.domElement);renderer.domElement.style.visibility="hidden";
-document.body.style.background="#090d20";
-// Camera-centred dome, peach horizon to indigo zenith, with a broad low sun.
-const sky=new THREE.Mesh(new THREE.SphereGeometry(800,32,20),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:{},vertexShader:`varying vec3 ray;void main(){ray=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`varying vec3 ray;void main(){vec3 d=normalize(ray);float t=pow(max(d.y,0.),.48);vec3 c=mix(vec3(.92,.65,.54),vec3(.15,.18,.34),t);vec3 sun=normalize(vec3(.26,.075,-1.));float a=max(dot(d,sun),0.);c+=vec3(.18,.09,.035)*pow(a,60.)+vec3(.25,.16,.07)*pow(a,1600.);c=mix(vec3(.92,.71,.62),c,smoothstep(-.10,.16,d.y));gl_FragColor=vec4(c,1.);}` }));
-scene.add(sky);
-const world=new World(scene,seed);
-import {World} from './world.js';
-import {Player} from './player.js';
-import {terrainHeight,hash,islandRadius,sparkNodes} from './generation.js';
-import {Mining} from './mining.js';
-const query=new URLSearchParams(location.search).get('seed');
-const requestedSeed=query!==null&&/^-?\d+$/.test(query)?Number(query)|0:73021;
-const seed=73021; // Handmade layout and decoration ignore requestedSeed.
-const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0xeab59f,.009);
-const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.08,950);
-const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);
-renderer.outputColorSpace=THREE.SRGBColorSpace;document.body.appendChild(renderer.domElement);renderer.domElement.style.visibility="hidden";
-document.body.style.background="#090d20";
-// Camera-centred dome, peach horizon to indigo zenith, with a broad low sun.
-const sky=new THREE.Mesh(new THREE.SphereGeometry(800,32,20),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:{},vertexShader:`varying vec3 ray;void main(){ray=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`varying vec3 ray;void main(){vec3 d=normalize(ray);float t=pow(max(d.y,0.),.48);vec3 c=mix(vec3(.92,.65,.54),vec3(.15,.18,.34),t);vec3 sun=normalize(vec3(.26,.075,-1.));float a=max(dot(d,sun),0.);c+=vec3(.18,.09,.035)*pow(a,60.)+vec3(.25,.16,.07)*pow(a,1600.);c=mix(vec3(.92,.71,.62),c,smoothstep(-.10,.16,d.y));gl_FragColor=vec4(c,1.);}` }));
-scene.add(sky);
-const world=new World(scene,seed);
-const player=new Player(camera,renderer.domElement,world,{x:.5,y:terrainHeight(0,0,seed)+1,z:.5});
-const mining=new Mining(scene,camera,world,player,renderer.domElement);
-
-
-import {World} from './world.js';
-import {Player} from './player.js';
 import {terrainHeight,hash,islandRadius,sparkNodes} from './generation.js';
 import {Mining} from './mining.js';
 const query=new URLSearchParams(location.search).get('seed');
