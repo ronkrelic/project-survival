@@ -19,7 +19,7 @@ export const sparkNodes=[[-11,9],[12,10],[-15,-7],[16,-12],[-20,5],[21,8]];
 export function voxelAt(x,y,z,seed){
  if(y<0||y>=HEIGHT||x<MIN_CHUNK*SIZE||x>=(MAX_CHUNK+1)*SIZE||z<MIN_CHUNK*SIZE||z>=(MAX_CHUNK+1)*SIZE)return 0;
  const h=terrainHeight(x,z);if(h<0)return 0;
- if(sparkNodes.some(([sx,sz])=>x===sx&&z===sz)&&y===h-1)return 10;
+ if(sparkNodes.some(([sx,sz])=>x===sx&&z===sz)&&y===h)return 10;
  const bottom=14+Math.floor(islandRadius(x,z)*16);
  if(y>=bottom&&y<bottom+2)return FOUNDATION_STONE;
  if(y>=bottom&&y<=h)return y===h?1:(Math.floor(y/4)%2?2:3);
