@@ -57,11 +57,11 @@ guide.update=function(dt){
   if(this.travel>1.5)this.say('steps',"There you go. The dark isn't empty. It's just quiet.");
   if(attention.gathered>0)this.say('gather',"The world gives, if you're gentle with it.");
   const radius=islandRadius(player.x,player.z),distance=Math.hypot(player.x,player.z);
-  if(radius>0&&distance/radius-distance<15)this.say('rim',"Not that way. The edge isn't finished yet. It will catch you, but stay with me.");
+  if(!(phase.value===1&&player.z<-90)&&radius>0&&distance/radius-distance<15)this.say('rim',"Not that way. The edge isn't finished yet. It will catch you, but stay with me.");
   if(attention.monolith)this.say('monolith',"It was here before the mist. It's waiting for something. I think you are too.");
   const progress=attention.regions.size!==this.regions||attention.gathered!==this.gathered||attention.monolith!==this.arrived;
   this.still=progress?0:this.still+dt;this.regions=attention.regions.size;this.gathered=attention.gathered;this.arrived=attention.monolith;
-  if(this.still>=90&&!attention.monolith&&!this.active&&!this.queue.length){this.say('nudge',"Shall we? It's this way.");this.still=0;}
+  if(this.still>=90&&!crossing.crossed&&!attention.monolith&&!this.active&&!this.queue.length){this.say('nudge',"Shall we? It's this way.");this.still=0;}
  }
  if(!this.active&&this.queue.length&&this.cooldown===0){this.active=this.queue.shift();this.elapsed=0;this.mode='approach';}
  const forward=new THREE.Vector3();camera.getWorldDirection(forward);forward.y=0;forward.normalize();
