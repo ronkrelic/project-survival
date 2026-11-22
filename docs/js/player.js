@@ -9,6 +9,16 @@ export class Player {
   canvas.addEventListener('click',()=>{canvas.requestPointerLock()?.catch(console.warn);});
   document.addEventListener('pointerlockchange',()=>{
    if(document.pointerLockElement===canvas)this.awake=true;else this.keys.clear();
+export class Player {
+ constructor(camera,canvas,world,spawn) {
+  this.camera=camera;this.world=world;this.canvas=canvas;
+  this.x=spawn.x;this.y=spawn.y;this.z=spawn.z;this.visualY=this.y;
+  this.yaw=0;this.pitch=-.035;this.vy=0;this.grounded=true;
+  this.home={...spawn};this.lastShore={...spawn};this.mistCatch=null;this.mistStrength=0;
+  this.keys=new Set();this.wake=0;this.awake=false;
+  canvas.addEventListener('click',()=>{canvas.requestPointerLock()?.catch(console.warn);});
+  document.addEventListener('pointerlockchange',()=>{
+   if(document.pointerLockElement===canvas)this.awake=true;else this.keys.clear();
   });
   document.addEventListener('mousemove',e=>{
    if(document.pointerLockElement!==canvas)return;
@@ -73,7 +83,7 @@ export class Player {
  update(dt) {
   const locked=document.pointerLockElement===this.canvas;
   if(this.awake)this.wake=Math.min(1,this.wake+dt/2);
-  if(this.world.loaded&&!this.mistCatch&&(this.y<0||Math.abs(this.x)>=128||Math.abs(this.z)>=128||(!this.grounded&&!this.hasGround(this.x,this.z))))this.catchMist();
+  if(this.world.loaded&&!this.mistCatch&&(this.y<0||Math.abs(this.x)>=128||Math.abs(this.z)>=(this.realmLimit||128)||(!this.grounded&&!this.hasGround(this.x,this.z))))this.catchMist();
   if(this.mistCatch)this.updateMist(dt);
   else if(locked&&this.wake===1){
    let f=Number(this.keys.has('KeyW'))-Number(this.keys.has('KeyS'));
@@ -100,3 +110,4 @@ export class Player {
   this.camera.rotation.set(this.pitch,this.yaw,0);
  }
 }
+   
