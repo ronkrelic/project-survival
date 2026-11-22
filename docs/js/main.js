@@ -16,6 +16,23 @@ document.body.style.background="#090d20";
 const sky=new THREE.Mesh(new THREE.SphereGeometry(800,32,20),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:{},vertexShader:`varying vec3 ray;void main(){ray=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`varying vec3 ray;void main(){vec3 d=normalize(ray);float t=pow(max(d.y,0.),.48);vec3 c=mix(vec3(.92,.65,.54),vec3(.15,.18,.34),t);vec3 sun=normalize(vec3(.26,.075,-1.));float a=max(dot(d,sun),0.);c+=vec3(.18,.09,.035)*pow(a,60.)+vec3(.25,.16,.07)*pow(a,1600.);c=mix(vec3(.92,.71,.62),c,smoothstep(-.10,.16,d.y));gl_FragColor=vec4(c,1.);}` }));
 scene.add(sky);
 const world=new World(scene,seed);
+import {World} from './world.js';
+import {Player} from './player.js';
+import {terrainHeight,hash,islandRadius,sparkNodes} from './generation.js';
+import {Mining} from './mining.js';
+const query=new URLSearchParams(location.search).get('seed');
+const requestedSeed=query!==null&&/^-?\d+$/.test(query)?Number(query)|0:73021;
+const seed=73021; // Handmade layout and decoration ignore requestedSeed.
+const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0xeab59f,.009);
+const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.08,950);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;document.body.appendChild(renderer.domElement);renderer.domElement.style.visibility="hidden";
+document.body.style.background="#090d20";
+// Camera-centred dome, peach horizon to indigo zenith, with a broad low sun.
+const sky=new THREE.Mesh(new THREE.SphereGeometry(800,32,20),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:{},vertexShader:`varying vec3 ray;void main(){ray=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`varying vec3 ray;void main(){vec3 d=normalize(ray);float t=pow(max(d.y,0.),.48);vec3 c=mix(vec3(.92,.65,.54),vec3(.15,.18,.34),t);vec3 sun=normalize(vec3(.26,.075,-1.));float a=max(dot(d,sun),0.);c+=vec3(.18,.09,.035)*pow(a,60.)+vec3(.25,.16,.07)*pow(a,1600.);c=mix(vec3(.92,.71,.62),c,smoothstep(-.10,.16,d.y));gl_FragColor=vec4(c,1.);}` }));
+scene.add(sky);
+const world=new World(scene,seed);
 const player=new Player(camera,renderer.domElement,world,{x:.5,y:terrainHeight(0,0,seed)+1,z:.5});
 const mining=new Mining(scene,camera,world,player,renderer.domElement);
 
@@ -93,7 +110,7 @@ sky.material.fragmentShader=sky.material.fragmentShader.replace('varying vec3 ra
 world.material.onBeforeCompile=shader=>{shader.uniforms.phaseLight={value:0};shader.uniforms.emberPosition={value:guide.body.position};world.material.userData.shader=shader;
  shader.vertexShader='varying vec3 islandPosition;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nislandPosition=(modelMatrix*vec4(position,1.)).xyz;');
  shader.fragmentShader='uniform float phaseLight;uniform vec3 emberPosition;varying vec3 islandPosition;\n'+shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat flora=step(.65,max(diffuseColor.g,diffuseColor.b))*step(diffuseColor.r,.7);float warmth=pow(max(0.,1.-distance(islandPosition,emberPosition)/18.),2.);vec3 ambient=mix(vec3(.14,.17,.30),vec3(.78,.70,.79),phaseLight);diffuseColor.rgb*=mix(ambient+warmth*vec3(1.15,.65,.24),vec3(.9),flora);');};
-function updateSky(dt){phase.value=THREE.MathUtils.damp(phase.value,attention.score/100*phase.ceiling,.35,dt);phase.value=Math.min(phase.ceiling,phase.value);phase.name=phase.value<.22?'night':phase.value<.56?'violet pre-dawn':'rosy cusp';sky.material.uniforms.progress.value=phase.value;
+function updateSky(dt){if(ritual.lit){ritual.elapsed=Math.min(90,ritual.elapsed+dt);const t=ritual.elapsed/90;phase.value=ritual.start+(1-ritual.start)*(t*t*(3-2*t));}else {phase.value=THREE.MathUtils.damp(phase.value,attention.score/100*phase.ceiling,.35,dt);phase.value=Math.min(phase.ceiling,phase.value);}phase.name=phase.value===1?'full dawn':phase.value<.22?'night':phase.value<.56?'violet pre-dawn':'rosy cusp';sky.material.uniforms.progress.value=phase.value;
  fogBase.copy(nightFog).lerp(violetFog,Math.min(1,phase.value/.38));if(phase.value>.38)fogBase.lerp(dawnFog,(phase.value-.38)/.62);
  if(world.material.userData.shader)world.material.userData.shader.uniforms.phaseLight.value=phase.value;
 }
@@ -107,11 +124,35 @@ for(let i=0;i<55;i++){
  const blade=new THREE.Mesh(g,mat);blade.position.set(x,terrainHeight(Math.floor(x),Math.floor(z),seed)+1+h/2,z);blade.rotation.y=i*2.4;grass.add(blade);
 }scene.add(grass);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+
+// Stage Three: one ritual, one dawn. No inventory or crafting screen.
+const ritual={lit:false,hold:0,elapsed:0,start:0,clock:0,x:6,z:-6,y:terrainHeight(6,-6)+1,
+ enough(){return (player.materials.sparkstone||0)>=3&&(player.materials.dryfiber||0)>=5;},
+ light(){if(this.lit||!this.enough())return false;player.materials.sparkstone-=3;player.materials.dryfiber-=5;mining.tally.textContent='Carried: '+Object.entries(player.materials).map(([k,v])=>k+' '+v).join(' · ');this.lit=true;this.start=phase.value;this.elapsed=0;mining.cancel();return true;}};
+const hearth=new THREE.Group();hearth.position.set(ritual.x,ritual.y,ritual.z);scene.add(hearth);
+for(let i=0;i<10;i++){const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.3,0),new THREE.MeshBasicMaterial({color:0x8c7b80}));rock.position.set(Math.cos(i*Math.PI/5)*.9,.08,Math.sin(i*Math.PI/5)*.9);rock.scale.y=.6;hearth.add(rock);}
+const ash=new THREE.Mesh(new THREE.CylinderGeometry(.68,.75,.08,12),new THREE.MeshBasicMaterial({color:0x49404c}));hearth.add(ash);
+const flames=[];for(let i=0;i<3;i++){const f=new THREE.Mesh(new THREE.ConeGeometry(.29-i*.055,.95-i*.12,7),new THREE.MeshBasicMaterial({color:[0xe98b63,0xffc47f,0xf8dba3][i],transparent:true,opacity:.8,depthWrite:false}));f.position.set((i-1)*.17,.48,i%2*.12);hearth.add(f);flames.push(f);}
+const fireLight=new THREE.PointLight(0xffb777,0,20,1.5);fireLight.position.y=1;hearth.add(fireLight);
+const sparks=[];for(let i=0;i<12;i++){const s=new THREE.Mesh(new THREE.IcosahedronGeometry(.025,0),new THREE.MeshBasicMaterial({color:0xffcc85,transparent:true}));hearth.add(s);sparks.push(s);}
+const glints=[];for(const [x,z] of sparkNodes){const g=new THREE.Mesh(new THREE.OctahedronGeometry(.07),new THREE.MeshBasicMaterial({color:0xffe7ad,transparent:true,depthWrite:false}));g.position.set(x+.5,terrainHeight(x,z)+1.08,z+.5);scene.add(g);glints.push(g);}
+const aurora=new THREE.Group();aurora.position.set(12,87,-62);scene.add(aurora);
+for(let i=0;i<3;i++){const geo=new THREE.PlaneGeometry(44,23,24,10),mat=new THREE.MeshBasicMaterial({color:i%2?0xad91cb:0x81c6bc,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false,fog:false});const ribbon=new THREE.Mesh(geo,mat);ribbon.rotation.y=i*Math.PI/3;ribbon.position.y=i*7;aurora.add(ribbon);}
+function updateRitual(dt){ritual.clock+=dt;const near=Math.hypot(player.x-ritual.x,player.z-ritual.z)<5;
+ if(player.awake&&player.wake===1&&!ritual.lit){if(near)guide.say('cold-circle',"It's cold here yet. Stone that sparks, grass that burns. Bring me some of each.");if(ritual.enough())guide.say('enough-fire',"That's enough. Bring it to the stone circle.");}
+ const dir=camera.getWorldDirection(new THREE.Vector3()),toward=hearth.position.clone().add(new THREE.Vector3(0,.25,0)).sub(camera.position);const aiming=near&&toward.length()<5&&dir.dot(toward.normalize())>.94;
+ if(!ritual.lit&&aiming&&ritual.enough()&&mining.held&&document.pointerLockElement===renderer.domElement){ritual.hold+=dt;mining.elapsed=0;if(ritual.hold>=2)ritual.light();}else ritual.hold=0;
+ flames.forEach((f,i)=>{f.visible=ritual.lit;f.scale.set(1+Math.sin(ritual.clock*3+i)*.1,1+Math.sin(ritual.clock*4+i)*.16,1);});fireLight.intensity=ritual.lit?5+Math.sin(ritual.clock*5)*.3+Math.max(0,1-ritual.elapsed)*8:0;
+ sparks.forEach((s,i)=>{s.visible=ritual.lit;const a=(ritual.clock*.3+i/12)%1;s.position.set(Math.sin(i*5+a)*.4,.3+a*2,Math.cos(i*7+a)*.4);s.material.opacity=1-a;});
+ glints.forEach((g,i)=>{const [x,z]=sparkNodes[i];g.visible=world.block(x,terrainHeight(x,z)-1,z)===10;g.material.opacity=.25+.2*Math.sin(ritual.clock*1.7+i);});
+ aurora.visible=ritual.lit;aurora.children.forEach((r,i)=>{r.material.opacity=.12*Math.min(1,ritual.elapsed/30);const p=r.geometry.attributes.position;for(let j=0;j<p.count;j++){const x=p.getX(j),y=p.getY(j);p.setZ(j,Math.sin(x*.16+ritual.clock*.22+i+y*.06)*2.7);}p.needsUpdate=true;});
+}
+
 let last=performance.now();
-function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;world.update(player.x,player.z);if(world.loaded&&!session.started){wakeButton.disabled=false;wakeHint.textContent='Ready when you are.';}if(world.loaded&&session.started){player.update(dt);mining.update(dt);attention.update();guide.update(dt);}updateSky(dt);
+function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;world.update(player.x,player.z);if(world.loaded&&!session.started){wakeButton.disabled=false;wakeHint.textContent='Ready when you are.';}if(world.loaded&&session.started){player.update(dt);updateRitual(dt);mining.update(dt);attention.update();guide.update(dt);}updateSky(dt);
  const rim=THREE.MathUtils.smoothstep(islandRadius(player.x,player.z),.55,1);const held=player.mistStrength||0;scene.fog.density=.012-phase.value*.004+rim*.034+held*.075;
  scene.fog.color.copy(fogBase).lerp(new THREE.Color(0xffe5cf),held*.55);
  sky.position.copy(camera.position);renderer.render(scene,camera);}
 requestAnimationFrame(frame);
 // Read-only inspection seam for desktop smoke tests; never displayed in-world.
-window.grin={session,seed,player,world,renderer,scene,camera,mining,attention,guide,phase,sky};
+window.grin={session,seed,player,world,renderer,scene,camera,mining,attention,guide,phase,sky,ritual,hearth,aurora,updateRitual,updateSky};
