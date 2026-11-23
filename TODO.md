@@ -143,4 +143,17 @@ This section supersedes the earlier inert-health/hunger and carried-but-not-eate
 
 Implemented in docs/js/main.js only; player/stamina, mining, world generation, materials, meshing, ritual and protocol code are unchanged. Health is purely a nourishment story: no fall damage, foes or other damage source. Guide revival is local; a special fainted remote-avatar pose is a possible later nicety, NOT implemented. README credits untouched.
 
-Verification record will follow controlled-time probes on the deployed Pages build. Native rendered feel and real two-device multiplayer remain unverified.
+Controlled-time verification is recorded below; native rendered feel and real two-device multiplayer remain unverified.
+
+
+### Stage Nine live verification — November 23, 2026
+
+On https://ronkrelic.github.io/project-survival/, controlled-time probes ran live fetched modules with a renderer stub and captured error/unhandledrejection arrays empty. Native WebGL was not a reliable probe route; these are not visual-feel sign-off. Final live JS (including the pointer-release/eat-label follow-up) was re-fetched and exercised in an isolated same-origin harness.
+
+Passed: island full remains 100/100 after 1500 simulated seconds; island hunger 0 / health 1 stays unfainted after 1000 seconds. Waking hunger loses exactly 1 in 15 seconds and reaches floating-point-near-zero after 1500 seconds; starvation loses 1 health in 5 seconds. Warning fires once during repeated low updates, eating above 40 re-arms it, next low crossing fires again. Both approved lines actually appeared in the speaking guide DOM, verbatim.
+
+Faint produced dark veil opacity 1, then after four controlled seconds revived at hunger 30 / health 20 with serialized inventory (including tools) and x/y/z unchanged. Feeding-care produced health 21 after another five seconds. Nourished regeneration gave 50 → 51 in five seconds at hunger 95; below 90 it stopped. Real grain button clicks consumed one and restored 25, logged the proposed journal line; two full-hunger attempts consumed nothing and logged exactly one gentle decline. Final I-key probe released pointer lock via a spy, cleared held keys/mining, opened the inventory and exposed the visible/accessibility eat hint. Actual native pointer-lock behavior/feel remains unverified. HUD values track live health/hunger; stamina source unchanged.
+
+Bare-handed island regression used real voxel mining: three exposed sparkstone and five grass blocks (grass yields earth plus dryfiber); actual aimed 2-second ritual hold lit fire and consumed 3 sparkstone / 5 dryfiber. Controlled dawn 90 seconds and bridge 7.1 seconds reached full dawn/manifestation; naming offered and accepted Ember; real player-controller movement walked the arch and crossed into waking at (0.5, 0.5), carrying the remaining earth and no tools. Positioning/time were instrumented, not one continuous human-input run.
+
+Static exact readback confirms player.js (including stamina), world.js, mining.js, materials.js and meshing.js unchanged; ritual/threshold and host craft-receipt validation source unchanged; all existing outgoing message-type occurrences match the pre-stage source, with no additions. This is no new two-device transport test. Native rendered quality, fade aesthetics, actual pointer-lock feel and real two-device multiplayer remain unverified. README credits untouched; no new food/cooking/drinks/damage/terrain/sky/movement/protocol systems.
