@@ -1,7 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 import {World} from './world.js';
 import {Player} from './player.js';
-import {terrainHeight,hash,islandRadius,sparkNodes} from './generation.js';
+import {terrainHeight,wakingHeight,hash,islandRadius,sparkNodes} from './generation.js';
 import {Mining} from './mining.js';
 const query=new URLSearchParams(location.search).get('seed');
 const requestedSeed=query!==null&&/^-?\d+$/.test(query)?Number(query)|0:73021;
@@ -51,7 +51,7 @@ guide.say=function(id,text){if(this.seen.has(id))return;this.seen.add(id);this.q
 guide.update=function(dt){
  this.clock+=dt;this.delight=Math.max(0,this.delight-dt);this.cooldown=Math.max(0,this.cooldown-dt);
  const step=Math.hypot(player.x-this.last.x,player.z-this.last.z);this.last={x:player.x,z:player.z};
- if(player.awake&&player.wake===1){
+ if(player.awake&&player.wake===1&&!world.waking){
   this.stood+=dt;if(step<1)this.travel+=step;
   if(this.stood>.7)this.say('greeting',session.name?`Hello, ${session.name}. You're awake. I was waiting for you.`:"Hello. You're awake. I was waiting for you.");
   if(this.travel>1.5)this.say('steps',"There you go. The dark isn't empty. It's just quiet.");
@@ -124,7 +124,7 @@ for(let i=0;i<3;i++){const geo=new THREE.PlaneGeometry(44,23,24,10),mat=new THRE
 
 function startCrackle(){try{const audio=mining.audio||new (window.AudioContext||window.webkitAudioContext)();audio.resume().catch(()=>{});const buffer=audio.createBuffer(1,audio.sampleRate*3,audio.sampleRate),data=buffer.getChannelData(0);let low=0;for(let i=0;i<data.length;i++){low=low*.985+(Math.random()*2-1)*.015;data[i]=low*2+(Math.random()<.0005?(Math.random()-.5)*.4:0);}const noise=audio.createBufferSource(),filter=audio.createBiquadFilter(),gain=audio.createGain();noise.buffer=buffer;noise.loop=true;filter.type='lowpass';filter.frequency.value=900;gain.gain.value=.055;noise.connect(filter).connect(gain).connect(audio.destination);noise.start();ritual.crackle={audio,noise,gain};}catch{}}
 
-function updateRitual(dt){ritual.clock+=dt;const near=Math.hypot(player.x-ritual.x,player.z-ritual.z)<5;
+function updateRitual(dt){if(world.waking)return;ritual.clock+=dt;const near=Math.hypot(player.x-ritual.x,player.z-ritual.z)<5;
  if(player.awake&&player.wake===1&&!ritual.lit){if(near)guide.say('cold-circle',"It's cold here yet. Stone that sparks, grass that burns. Bring me some of each.");if(ritual.enough())guide.say('enough-fire',"That's enough. Bring it to the stone circle.");}
  const dir=camera.getWorldDirection(new THREE.Vector3()),toward=hearth.position.clone().add(new THREE.Vector3(0,.25,0)).sub(camera.position);const aiming=near&&toward.length()<5&&dir.dot(toward.normalize())>.94;
  if(!ritual.lit&&aiming&&ritual.enough()&&mining.held&&document.pointerLockElement===renderer.domElement){ritual.hold+=dt;mining.elapsed=0;if(ritual.hold>=2)ritual.light();}else ritual.hold=0;
@@ -146,25 +146,45 @@ const naming=document.createElement('div');naming.id='guide-naming';naming.hidde
 function acceptGuideName(){if(crossing.named)return;const input=document.getElementById('guide-name');const name=Array.from(input.value.trim()).slice(0,16).join('');if(!name){input.value='Ember';input.focus();return;}crossing.name=name;crossing.named=true;guide.name=name;guide.delight=6;guide.say('given-name',name+'.');guide.say('keep-name',"I'll keep it.");naming.hidden=true;naming.style.display='none';renderer.domElement.requestPointerLock()?.catch(()=>{});}
 document.getElementById('accept-guide-name').onclick=acceptGuideName;
 const baseBlock=world.block.bind(world);world.block=function(x,y,z){
+ if(world.waking)return baseBlock(x,y,z);
  if(crossing.manifest>=1){
  if(!crossing.named&&x>=10&&x<=14&&z===-101&&y>=36&&y<=43)return 9;
  if(crossing.named&&x>=11&&x<=13&&z<=-100&&z>=-146&&y===bridgeY(z)&&(!crossing.crossed||z<=crossing.furthest+3))return 9;
- if((x-12)**2+(z+156)**2<=90&&y>=34&&y<=36)return 9;
+
  }return baseBlock(x,y,z);};
-const baseCatch=player.catchMist.bind(player);player.catchMist=function(){if(!crossing.crossed)return baseCatch();const target=this.landing(12,-156);if(!target)return;this.mistCatch={t:0,from:{x:this.x,y:this.y,z:this.z},target};this.vy=0;this.grounded=false;this.keys.clear();};
-function updateCrossing(dt){crossing.clock+=dt;if(phase.value!==1)return;
- crossing.manifest=Math.min(1,crossing.manifest+dt/7);bridge.visible=shore.visible=true;player.realmLimit=190;
+const baseCatch=player.catchMist.bind(player);player.catchMist=function(){if(!crossing.crossed)return baseCatch();const edge=world.waking?this.lastShore:null;const target=world.waking?(edge&&this.landing(edge.x,edge.z)||this.landing(this.home.x,this.home.z)):this.landing(12,-145);if(!target)return;this.mistCatch={t:0,from:{x:this.x,y:this.y,z:this.z},target};this.vy=0;this.grounded=false;this.keys.clear();};
+const veil=document.createElement('div');veil.id='threshold-mist';veil.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:25;background:radial-gradient(ellipse,#f4dfcf,#b9bdc6);opacity:0';document.body.append(veil);
+function updateCrossing(dt){
+ if(crossing.veil){
+  const v=crossing.veil;v.t+=dt;
+  if(!v.moved&&v.t>=1){
+   v.moved=true;world.enterWaking();const from=new THREE.Vector3(player.x,player.y,player.z);
+   player.x=.5;player.z=.5;player.y=wakingHeight(0,0,seed)+1;player.visualY=player.y;player.vy=0;player.keys.clear();player.mistCatch=null;
+   player.home=player.lastShore={x:player.x,y:player.y,z:player.z};
+   guide.body.position.add(new THREE.Vector3(player.x,player.y,player.z).sub(from));player.update(0);
+   bridge.visible=shore.visible=grass.visible=hearth.visible=aurora.visible=false;glints.forEach(g=>g.visible=false);
+   if(ritual.crackle)ritual.crackle.gain.gain.value=0;
+  }
+  const settled=v.moved&&[-1,0,1].every(x=>[-1,0,1].every(z=>world.chunks.has(world.key(x,z))));
+  if(settled)v.fade=(v.fade||0)+dt;
+  veil.style.opacity=String(v.moved?1-Math.min(1,v.fade||0):Math.min(1,v.t));
+  if(v.fade>=1){crossing.veil=null;veil.style.opacity='0';}
+  return;
+ }
+ if(world.waking)return;
+ crossing.clock+=dt;if(phase.value!==1)return;
+ crossing.manifest=Math.min(1,crossing.manifest+dt/7);bridge.visible=true;shore.visible=false;player.realmLimit=190;
  if(crossing.manifest===1)guide.say('way-open',"The way is open. It only goes forward.");
- if(!crossing.named&&!crossing.offered&&crossing.manifest===1&&Math.hypot(player.x-12,player.z+98)<6){crossing.offered=true;guide.say('ask-name',"You've come all this way with me, and I never told you my name. I don't have one yet. Would you give me one?");}
+ if(!crossing.named&&!crossing.offered&&crossing.manifest===1&&Math.hypot(player.x-12,player.z+98)<6){crossing.offered=true;guide.say('ask-name',"You've called me Ember since you woke. Maybe it's mine. But a name should be given, not assumed. Would you give me one?");}
  if(crossing.offered&&!crossing.named&&guide.active?.id==='ask-name'&&guide.mode==='speaking'&&guide.elapsed>guide.active.duration){naming.hidden=false;naming.style.display='grid';document.exitPointerLock();document.getElementById('guide-name').focus();}
  if(crossing.named&&player.z<-112&&Math.abs(player.x-12)<2){crossing.crossed=true;crossing.furthest=Math.min(crossing.furthest,player.z);}
- if(crossing.crossed&&player.z<-146){player.home={x:12,y:37,z:-156};crossing.furthest=-151;}
+ if(crossing.crossed&&player.z<-145){crossing.furthest=-151;crossing.veil={t:0,moved:false,fade:0};mining.cancel();}
  decks.forEach(d=>{const gone=crossing.crossed&&d.position.z>crossing.furthest+3;d.material.opacity=THREE.MathUtils.damp(d.material.opacity,gone?0:crossing.manifest,2,dt);d.position.y=bridgeY(Math.floor(d.position.z))+.5-(1-crossing.manifest)*3;});
 }
 
 let last=performance.now();
-function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;world.update(player.x,player.z);if(world.loaded&&!session.started){wakeButton.disabled=false;wakeHint.textContent='Ready when you are.';}if(world.loaded&&session.started){player.update(dt);updateRitual(dt);updateCrossing(dt);mining.update(dt);attention.update();guide.update(dt);}updateSky(dt);
- const rim=crossing.manifest>0&&player.z<-96?0:THREE.MathUtils.smoothstep(islandRadius(player.x,player.z),.55,1);const held=player.mistStrength||0;scene.fog.density=.012-phase.value*.004+rim*.034+held*.075;
+function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;world.update(player.x,player.z);if(world.loaded&&!session.started){wakeButton.disabled=false;wakeHint.textContent='Ready when you are.';}if(world.loaded&&session.started){if(!crossing.veil)player.update(dt);updateRitual(dt);updateCrossing(dt);if(!crossing.veil)mining.update(dt);attention.update();guide.update(dt);}updateSky(dt);
+ const rim=world.waking?0:crossing.manifest>0&&player.z<-96?0:THREE.MathUtils.smoothstep(islandRadius(player.x,player.z),.55,1);const held=player.mistStrength||0;scene.fog.density=.012-phase.value*.004+rim*.034+held*.075;
  scene.fog.color.copy(fogBase).lerp(new THREE.Color(0xffe5cf),held*.55);
  sky.position.copy(camera.position);renderer.render(scene,camera);}
 requestAnimationFrame(frame);
