@@ -346,3 +346,6 @@ world.install=function(data){rawInstall(data);for(const d of net.deltas.values()
 wakeButton.addEventListener('click',e=>{if(net.mode!=='solo'&&!net.ready){e.preventDefault();e.stopImmediatePropagation();notice('The thread is still finding your friends. Wait a moment, or choose Wake alone.');}},true);
 netButton('Wake alone',netPanel,()=>{net.peer?.destroy();net.peer=null;net.host=null;net.mode='solo';net.ready=false;netNotice.hidden=true;for(const track of net.localStream?.getTracks()||[])track.stop();wakeButton.click();});
 const voiceRequest=voice.request.bind(voice);voice.request=async function(){const stream=await voiceRequest();mute.textContent=stream?(this.muted?'Mic muted':'Mic on'):'No microphone';return stream;};
+
+// A failed ICE channel must not hold a seat or strand a guest forever.
+setInterval(()=>{if(net.mode==='host'){for(const c of net.links.values()){const state=c.peerConnection?.connectionState;if(state==='failed'||state==='closed'){c.close();continue;}if(!c.psName){c.psWaiting=(c.psWaiting||0)+1;if(c.psWaiting>=20)c.close();}}}else if(net.mode==='guest'&&net.host){const state=net.host.peerConnection?.connectionState;if(state==='failed'||state==='closed')net.host.close();}},1000);
