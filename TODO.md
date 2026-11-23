@@ -157,3 +157,35 @@ Faint produced dark veil opacity 1, then after four controlled seconds revived a
 Bare-handed island regression used real voxel mining: three exposed sparkstone and five grass blocks (grass yields earth plus dryfiber); actual aimed 2-second ritual hold lit fire and consumed 3 sparkstone / 5 dryfiber. Controlled dawn 90 seconds and bridge 7.1 seconds reached full dawn/manifestation; naming offered and accepted Ember; real player-controller movement walked the arch and crossed into waking at (0.5, 0.5), carrying the remaining earth and no tools. Positioning/time were instrumented, not one continuous human-input run.
 
 Static exact readback confirms player.js (including stamina), world.js, mining.js, materials.js and meshing.js unchanged; ritual/threshold and host craft-receipt validation source unchanged; all existing outgoing message-type occurrences match the pre-stage source, with no additions. This is no new two-device transport test. Native rendered quality, fade aesthetics, actual pointer-lock feel and real two-device multiplayer remain unverified. README credits untouched; no new food/cooking/drinks/damage/terrain/sky/movement/protocol systems.
+
+
+## Stage Ten — The settling-in update
+
+Designed by Relic · November 23, 2026. Implemented proposals below remain vetoable by Relic; they are not prior approved dialogue.
+
+### Implemented
+- [x] Explicit selected-tool hotbar; quiet selection supersedes Stage Eight auto-apply. Selected hoe required to till; planting/harvesting contextual.
+- [x] Inline painted SVG icons in hotbar/inventory/recipes.
+- [x] Right-click carried-block placement, collision guard and host material ledger validation using existing message extensions.
+- [x] Versioned world/personal saves, ~30-second autosave, Continue and confirm-guarded Begin anew; uncrossed runs Wake fresh.
+- [x] Four stone tools (2 wood + 3 stone; 1.5x speed), echostone canon, deterministic hearthglow ore in canyon/frost; stone pickaxe only.
+- [x] Lit waking-hearth cooking: bread 3 grain -> 60 hunger/2 health; cakes 2 grain + 2 seeds -> 40 hunger/4 health.
+- [x] Saved 840-second rhythm (600 daylight/240 night), clock/day readout, stars/aurora, night floor .26, stronger waking flora/hearth glow.
+- [x] Synthesized wind, footsteps, mining, placement, eating, hearth, guide and faint/revival sounds; gesture unlock and mute. No music.
+
+All numeric/name/UI proposals remain vetoable: hotbar/order/keys, no selection journal or drag/drop, hoe selection, right-click, no mid-island save, stone costs/speed, hearthglow ore, both food names/costs/restores, hearth radius 5, cycle split, clock format, mute placement. No new guide line was added. See bible 05/08/09/14/16 for canon and exact save schema.
+
+### Stage Ten instrumented live verification — November 23, 2026
+Source: https://ronkrelic.github.io/project-survival/ . Same-origin harness fetched live modules, stubbed renderer and disabled RAF; time and positioning controlled, saves isolated in memory. This is not native rendered-feel sign-off.
+Passed: actual Mining.update held-input loop on stone: hands blocked, wooden 1.50s, stone 1.00s; ore wooden blocked, stone 1.60s. Stone axe craft spends 2 wood/3 stone. Selected hoe till succeeds; hands fail. SVGs found in all three panels. Placement spends one earth, creates delta, rejects player intersection; direct host validation accepts funded guest, rejects empty balance and wrong material ID. Invalid mixed craft receipt leaves ledger intact; valid wooden receipt spends 3 wood/grants tool. Deterministic ore found in Frost Peaks (-500,51,-110) and Canyon and River Lands (-500,33,296).
+Passed: dark-hearth cooking rejected; lit nearby bread consumes 3 grain, eating moves hunger 20->80 and health 40->42; cake 20->60 and 40->44. Controlled cycle 539+62 -> 601, Night, light .26; rollover -> day2/06:00; night floor .26. Save tick31 writes; Continue restores 2 deltas, 6 crops, clock432/day3, inventory earth4 after mutation; clear removes isolated records. Hardening re-probe confirms clock contains only seconds/day and personal continuity identity exists. Sound AudioContext running, tone succeeds; mute suppresses play and sets master gain0, unmute restores .45.
+Passed bare-handed island regression: actual Mining.update against authored voxelAt data gathers 3 sparkstone+5 dryfiber; aimed held 2.05s lights ritual, spends both; controlled authored 90s dawn and 7.1s bridge manifest, naming and crossing reach waking. This used instrumented camera/position and an in-memory voxel removal adapter, not a continuous human walk. Island vitals stay100/100 after1500s; waking starvation faints and 4s revival restores30/20. Harness error/rejection arrays empty.
+Integration repairs: web-editor duplicated hotbar content was repaired in a new commit, not amended; data-only saved clock/private ledger continuity hardened; unchanged deltas no longer trigger perpetual remesh. Final flora shader change is exact-readback verified, not shader-render verified.
+
+### Still unverified / future
+- [ ] Native WebGL visual quality, 48px icon aesthetics, input/scroll/pointer-lock feel and audio listening/each contextual trigger.
+- [ ] Real two-device transport, reconnect continuity and restored host ledger session behavior (direct validator tests only).
+- [ ] Full current-build crop growth/harvest regression, confirmation-dialog click path and reload/chunk-remesh save restoration beyond in-memory roundtrip.
+- [ ] Shared multiplayer crops remain local-only; do not imply synced farms.
+- [ ] Hearthglow ore uses are future; no ore crafting/use yet.
+- [ ] Music future; no water/weather/monsters/death/durability/drag-drop/new biomes/mobile added. README credits untouched.
