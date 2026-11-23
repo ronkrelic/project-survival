@@ -34,7 +34,7 @@ Awaiting Relic: real pointer-lock tutorial-to-world playthrough; mist-veil conti
 
 ## Not yet started, in intended order
 
-3. Crafting, tools, real inventory.
+3. Further crafting progression and inventory interactions (Stage Eight wooden tools complete; see below).
 4. Block placing and building.
 5. Co-op multiplayer.
 6. Broader waking-world systems beyond Stage 4 terrain and streaming.
@@ -108,3 +108,28 @@ Injected host state and actual boot/transport handlers (no PeerJS connection) ga
 Unverified here: rendered appearance, Firefox engine rendering (properties checked in Chromium), real two-device chat/voice/NAT, native pointer lock, and narrow-screen overall HUD overlap. No gameplay, dialogue, network protocol, terrain, sky or movement changes; transport/voice behavior not redesigned. Relic’s visual pass remains the aesthetic check.
 
 Final follow-up: final Pages deployment succeeded. Old journal rows computed opacity 0.55. The injected fake connection lacked psName/close, so after the admission timeout the real seat-cleanup timer raised c.close is not a function; this is a probe-harness error, not evidence of a production PeerJS failure. The fake was corrected and error capture restarted. No source fix was needed. Maximum 100-row journal geometry remained bottom-left and bounded.
+
+## Stage Eight — Relic, November 22, 2026
+
+Implemented through the GitHub web editor, one chunk committed to main and commit-pinned exact readback before the next. README credits untouched. Later design revision supersedes the early stone-cost recipes, loose-stone experiment and island crafting beat: no loose stones remain, and crafting/lesson are waking-world only.
+
+- C opens matte crafting beside the existing I inventory. Four wooden cards show result and owned/required materials, disable unaffordable actions, consume materials and journal successful crafts. Wooden axe, hoe, pickaxe and shovel each cost **3 wood**; exact costs/brown swatches are vetoable. No stone prerequisite. Automatic contextual ownership, no equip, hotbar or durability (vetoable implementation calls).
+- Hands loosen dirt/wood at 3x normal duration. Stone/canyon-red cannot progress without a wooden pickaxe. Dirt 1.20s hands / 0.40s shovel; wood 2.70s hands / 0.90s axe; leaves 1.35s / 0.45s axe; stone infinite hands / 1.50s pickaxe. Sparkstone remains a hand-obtainable 1.50s exception from the authored spark nodes; mist-catch is recovery, not its source.
+- Guide teaches shortly after waking-world arrival, waits for a real craft, acknowledges, skips gracefully if already crafted. Approved lines unchanged: “The island gave freely. Beyond the bridge, some things ask for more than hands. Let me show you how to make what you'll need.” / “There. Made by your own hands now. The world will notice.” Stone hint once: “Stone won't yield to hands alone. It asks for an edge.” Existing deterministic tree near (-5,-22), about 22.6m from arrival, needs no terrain-generation change.
+- E tills uncovered dirt-like soil with a wooden hoe, plants one seed in empty farmland, or harvests mature crops. ID17 farmland has painterly dark rows. Proposed/vetoable names: **sunmeadow grain** (food), **sunmeadow seeds**. Meadow wild patches, lighter forest patches; harvest 1 grain + 2 seeds. Four visible growth stages at 0/60/120/180 seconds, session-only. Food/seeds appear in the grid.
+- Soil till deltas travel through the host. Host validates location/range/realm/material/clear top and tools. Relic expressly approved ordered craft receipts on existing block requests: reconcile 3-wood costs against the host guest-yield ledger; no new message type. Host does not validate held-mining duration.
+- **KNOWN MULTIPLAYER LIMITATION: growing crops and wild patches are LOCAL-ONLY, not synced.** Tools/recipes/mining are per-player local state; crops/food/seeds are not shared. Later multiplayer farming must address this.
+- PeerJS 1.5.5 browser bundle and MIT notice vendored in docs/js/vendor/peerjs.min.js. Local-only primary loader, no CDN fallback. Public broker still required; Three.js retains its pre-existing CDN dependency. This is not an offline game.
+- **Eating is deliberately OUT OF SCOPE. Health/hunger bars remain inert placeholders.** No cooking, watering/water system, durability, equip/hotbar, new biomes, saving, random seeds or changes to movement/sky/terrain generation/ritual/existing dialogue.
+
+### Live Pages instrumented verification and limits
+
+November 22, https://ronkrelic.github.io/project-survival/: renderer stub, controlled time, real fetched modules/voxel arrays/controller; captured error and unhandledrejection arrays empty in successful probes. Native WebGL attempts timed out; these are not rendered playtest sign-off.
+
+Passed C opening, four unaffordable cards disabled and empty craft rejected; actual hand-chop three tree blocks -> 3 wood -> wooden pickaxe consumes 3/grants 1 -> stone mines. Measured dirt 1.20/.40s, wood 2.71/.90s at .01s sampling; stone unchanged with zero accumulated progress after 3.50s bare hands, removed after 1.50s with pickaxe. Hand sparkstone 1.50s. All four recipe declarations are 3 wood; pickaxe and hoe actual consume/grant paths exercised.
+
+Bare-handed regression gathered actual 3 sparkstone and 5 dryfiber, lit the unchanged ritual, consumed exactly 3/5, advanced dawn 90 simulated seconds and bridge manifestation 7.1s. Named guide and actual controller walked the arch and transitioned to waking without tools. Stage Eight probe invoked ritual.light directly; 2-second aimed hold was not re-run (Stage Five hold probe remains historical evidence). Not one continuous real-time human-input run.
+
+Natural guide queue teach -> actual crafting -> acknowledgment completed; pre-crafted state skipped. Wild harvest gave 1 food/2 seeds; crafted hoe, till produced ID17, planting consumed 1 seed, premature harvest rejected; precise controlled stages [0,1,2,3] at 60-second intervals; mature harvest food/seeds and food inventory slot verified. Final leaf classification and six-row soil mesh had exact source readback, not a new rendered check.
+
+Host receive handlers with a fake open guest connection rejected no-hoe till and no-pickaxe stone; legal 3-wood receipts consumed host-accounted wood, accepted till/stone and broadcast. Guest receive handler applied relayed ID17. This tests host validation/relay wiring, not two-device delivery. Actual local PeerJS bundle fetched 200; actual host boot reached 0.peerjs.com and generated W4BQ9U. Microphone was stubbed. Real two-device WebRTC/voice, native pointer lock, visual quality/soil rows/crop silhouettes, narrow-screen crafting feel and continuous end-to-end human play remain unverified. No external broker account/config change.
