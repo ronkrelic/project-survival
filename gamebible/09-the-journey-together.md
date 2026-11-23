@@ -30,6 +30,14 @@ The game has a minimap, but it shows only places the player has already been —
 
 The minimap is approved direction, replacing the original no-minimap proposal; the full map's home with the guide remains a possibility, not a settled implementation.
 
+## Stage Five HUD and movement — decided by Relic, November 22, 2026
+
+The quiet HUD uses soft rounded matte panels with peach/amber accents, not gamey chrome. Top left, two stacked boxes: the player box carries the entered session character name (Wanderer if unnamed), then health, hunger and stamina bars. Health and hunger are full, inert, explicitly marked not yet active: damage, food and death systems do not exist in this slice. Stamina is functional. Directly below, the guide box carries the committed 48px matte Ember portrait, his current session name (Ember by default, following the earned bridge rename), and the small label “spirit guide”. The explored-only minimap is framed at top right; island and waking exploration books stay separate and unknown ground stays hidden. The working material tally remains bottom left. No saving is introduced.
+
+Space jumps on either realm: 6.6m/s takeoff with the existing 18m/s² gravity (ideal rise 1.21 blocks; substeps make the measured peak slightly lower). Hold either Shift while moving to sprint at 6.4m/s versus 4m/s walking (1.6×). Stamina capacity is 100, drain 16 points/s, recovery 12 points/s when not sprinting; depletion returns to walking until 25 points have recovered. Standing with Shift is not sprinting. No jump stamina cost. Existing collision, bounds and mist-catch stay in force.
+
+On the island, after basic movement and before gathering/fire dialogue, the guide teaches jump then sprint, one at a time, waiting for actual performance before acknowledging. Early performance gracefully reduces that lesson to its acknowledgment; nothing is retaught in the waking world. The four approved lines and detailed sequence are canon in [section 16](16-the-threshold.md). This responsive teaching supersedes the earlier Stage Five no-new-dialogue restriction; no existing lines change.
+
 ## Open questions / gaps
 
 - Exact opening script and flow.
