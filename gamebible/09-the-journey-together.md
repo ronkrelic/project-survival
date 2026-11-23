@@ -81,3 +81,5 @@ Multiplayer: tools/recipes/mining remain per-player local state. Soil uses the e
 **Known multiplayer limitation:** growing crops and wild patches are LOCAL-ONLY, not synced. Food/seeds stay local, growth is not saved, and another player's crop view can differ. Later shared farming must settle this honestly.
 
 PeerJS 1.5.5 is vendored at docs/js/vendor/peerjs.min.js with its full MIT notice. The loader uses that local copy only, without a CDN fallback. The public 0.peerjs.com signaling broker and WebRTC networking are still required; Three.js still uses its existing CDN import. Vendoring PeerJS does not make the entire game offline or dependency-free.
+
+Relic decision, November 22, 2026: keep validated craft receipts (option A). Guests attach the ordered receipts to existing block requests; the host validates their wood costs against its own guest-yield ledger, with no new message type. This protocol extension is expressly approved, not an unresolved implementation choice.
