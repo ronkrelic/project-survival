@@ -110,3 +110,23 @@ Designed by Relic · November 23, 2026. Implemented proposals below remain vetoa
 Stage Ten explicitly SUPERSEDES Stage Eight context auto-apply: the selected owned tool is what acts; default is bare hands. Matte bottom-center dynamic hotbar: hands, wooden pickaxe/axe/shovel/hoe, stone pickaxe/axe/shovel/hoe, then carried earth/sand/snow/stone/echostone/wood; maximum fifteen slots including hands. Only owned entries appear. 0 selects hands, 1–9 selects the first nine owned entries; wheel cycles every slot. No drag-and-drop. Scheme/order/slot count vetoable. Selection is quiet with no journal logging (vetoable).
 Tilling requires a selected wooden or stone hoe (vetoable), while planting/harvesting stay contextual. Tool ownership alone never grants its mining effect. Inline code-drawn matte SVG item icons share one style across hotbar, inventory and recipe cards, without external image assets.
 WebAudio provides gently biome-varied wind, surface footsteps, material-class mining, block placement, eating, nearby lit-hearth crackle, guide chime and faint/revival tones. Top-right Sound on/off toggle placement is vetoable. Audio unlocks/resumes on user gesture and master mute silences it. No music this stage; music remains future. Selection, vitals, cooking and sound are personal/local. Existing host validation remains authoritative for shared edits; true two-device verification is still required.
+
+
+## Settling-in interface revision — Relic, November 23, 2026
+
+Inventory and hotbar only: Minecraft's structural readability, Project Survival's palette. All colors, spacing and feedback tuning below are proposals vetoable by Relic, not visual sign-off.
+
+The persistent bottom-center hotbar uses framed SVG slots, bottom-right counts and an amber selected frame. Hands remain slot 0 with their own drawn icon. Existing number/wheel selection remains; selection is also explicit when pinning a block or tool from inventory. The I panel has a header, inset grid (at least 27 framed cells), counts, tool display and existing click-to-eat hint. A dim character silhouette reserves future layout space only: no equipment slots or equipment logic. No drag-and-drop. The existing C recipe panel receives only cheap palette consistency changes; no new crafting window or workbench.
+
+### Exact proposed tones (vetoable)
+- Warm parchment panel #eadcc5 (f5 alpha); sage slot #c6c6a9; ochre frame #aa9475.
+- Light edge #f7ecd7; ink #514c49; selected amber #d49b54 with fill #d9c59b.
+- Character placeholder sage #748775, rose #b58483 and pale sage #97aa91.
+- Constructed earth #9b7c6c, mesh linear RGB [.33,.23,.18], keeps the world's matte earth family.
+Soft inset frames and warm edges aim to sit with the loading screen rather than import Minecraft gray. Native appearance still needs Relic's playtest: the verification browser cannot initialize WebGL and its captures are black.
+
+### Tool-speed feedback (vetoable tuning)
+Effective speed is (material base seconds * 3) / selected effective mining seconds. Particle cadence is 5 * speed; progress glow is .03 + .12 * progress + .015 * (1 + sin(elapsed * 5 * speed)). These remain soft progress cues, not an arcade flash.
+Mining note interval is .42 / max(1,speed) seconds. Hands/wood/stone character uses 110/160/220Hz, with a 1.2 multiplier on stone-class blocks. Stone notes last .14s at .065 gain; other notes .09s at .045. Completion notes are 300/360/440Hz for hands/wood/stone, .22s at .045. Existing master mute is now remembered across sessions. No music was added.
+
+Controlled equal-duration .45s probes observed hands/wooden axe/stone axe particles 2/6/10 and mining-note counters 1/3/4, with distinct progress glow. A real barehand completion emitted the 300Hz completion note. DOM checks confirmed framed cells, counts, hands SVG, amber selection, character reserve and inventory click pinning. These checks do not establish aesthetic quality, comfortable native audio mix, pointer-lock feel or real two-device multiplayer.
