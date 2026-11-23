@@ -104,3 +104,13 @@ Costs are a **vetoable proposal**, wood-only with no binding or stone prerequisi
 Times are tuning calls; discrete 0.01-second probes measured wood at 2.71 seconds because of floating-point accumulation. Protected monolith/foundation remain protected. Sparkstone comes from the six pale surface seams, NOT from mist-catch; mist-catch only returns a falling traveler. Grass still grants earth and dryfiber. The 3 sparkstone + 5 dryfiber ritual is unchanged and needs no tool.
 
 **Proposed names, vetoable:** sunmeadow grain (crop and harvested food), sunmeadow seeds. Wild and mature cultivated crops yield 1 grain + 2 seeds; planting spends 1 seed in tilled soil. The grain occupies an ordinary inventory slot; food use/eating and cooking are deliberately absent. There is no hunger activation. Growth is session-only, four visible stages over three minutes, and crop/wild-patch state is local-only in multiplayer this stage.
+
+
+## Stage Nine — nourishment as care — Relic, November 23, 2026
+
+This section supersedes the earlier inert-health/hunger and carried-but-not-eaten Stage Five/Eight notes. Relic’s design: hunger drains slowly; empty hunger costs health; zero health means fainting, NEVER death. The guide feeds the traveler, who wakes where they fell with inventory, tools and position intact. No drops or penalties beyond lost time. All nourishment and the guide are strictly per-player LOCAL state. No multiplayer message types or protocol changes; host validation and ordered craft receipts stay as before.
+
+Sunmeadow grain is the only edible food this stage. One I-grid click consumes one grain and restores 25 hunger, capped at 100; full hunger consumes nothing. Seeds remain planting-only. No cooking, new foods, drinks, durability or saving. Crop yield and local-only growth are unchanged.
+
+**Vetoable implementation tuning:** hunger/health 0–100; hunger drains 1 per 15 play-seconds (25 minutes full to empty), starvation costs 1 health per 5 seconds. Grain restores 25 hunger. Health regenerates 1 per 5 seconds at hunger **90 or above** (a proposed nourished zone, not Relic’s literal full-only wording). Low warning at 25 or below, re-armed only by eating to at least 40. Fainting lasts four seconds with a soft dark fade; revival restores hunger 30 and health 20. To make “20 and climbing” real, guide-fed care grants 25 seconds of recovery at 1 health/5 seconds even below 90 (up to 5 extra health); it does not stack with nourished regeneration. This temporary feeding-care exception is vetoable. No offline catch-up; active session time only. Stamina is unchanged.
+
