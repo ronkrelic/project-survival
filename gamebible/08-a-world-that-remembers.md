@@ -51,3 +51,12 @@ Wild sunmeadow grain patches are plentiful in meadow and light in forest. A matu
 **Vetoable implementation calls:** automatic contextual tools, three-wood costs, timings, E interaction, and the proposed crop/food name "sunmeadow grain" and "sunmeadow seeds". These are implementation proposals under Relic's direction, not extra owner-approved dialogue.
 
 Soil is a host-validated block delta. Crops, wild patches and growth are LOCAL-ONLY per player, not shared or saved; a later multiplayer farming pass must synchronize them. Tool ownership and recipe execution are local, with host-side receipt/cost reconciliation on block requests to reject illegal guest mining/tilling.
+
+
+## Stage Nine — nourishment as care — Relic, November 23, 2026
+
+This section supersedes the earlier inert-health/hunger and carried-but-not-eaten Stage Five/Eight notes. Relic’s design: hunger drains slowly; empty hunger costs health; zero health means fainting, NEVER death. The guide feeds the traveler, who wakes where they fell with inventory, tools and position intact. No drops or penalties beyond lost time. All nourishment and the guide are strictly per-player LOCAL state. No multiplayer message types or protocol changes; host validation and ordered craft receipts stay as before.
+
+**Vetoable implementation tuning:** hunger/health 0–100; hunger drains 1 per 15 play-seconds (25 minutes full to empty), starvation costs 1 health per 5 seconds. Grain restores 25 hunger. Health regenerates 1 per 5 seconds at hunger **90 or above** (a proposed nourished zone, not Relic’s literal full-only wording). Low warning at 25 or below, re-armed only by eating to at least 40. Fainting lasts four seconds with a soft dark fade; revival restores hunger 30 and health 20. To make “20 and climbing” real, guide-fed care grants 25 seconds of recovery at 1 health/5 seconds even below 90 (up to 5 extra health); it does not stack with nourished regeneration. This temporary feeding-care exception is vetoable. No offline catch-up; active session time only. Stamina is unchanged.
+
+Health is only a nourishment story in this stage: no foes, fall damage, death, durability, cooking, drinks, new food, saving or terrain/movement/sky changes. The island threshold runs no nourishment clock at all; it cannot starve or faint a traveler.
