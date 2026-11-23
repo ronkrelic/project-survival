@@ -50,3 +50,16 @@ Stage One establishes only the handmade island in mist, its hollow, monolith, sp
 - Second characters.
 - Rememberings echo.
 - 
+
+## Stage Five: feet, breath and the quiet HUD
+
+Decided by Relic, November 22, 2026. After the existing basic movement acknowledgment (“There you go. The dark isn't empty. It's just quiet.”), before gathering and fire dialogue, the guide teaches jump first and sprint second. One lesson at a time; he waits for an actual grounded takeoff / actual Shift-held moving sprint, not merely a key event. His delight brightens on the acknowledgment. Existing guide lines remain verbatim.
+
+1. Jump teaching: "The island climbs in steps. When a step is too tall, press space and rise to meet it."
+2. After the first actual jump: "There. The world holds you up on the way down."
+3. After that acknowledgment, sprint teaching: "If you're eager, hold shift and run. It spends your stamina; walk a while and it comes back."
+4. After the first actual sprint hold: "The wind noticed you."
+
+A pre-emptive jump or sprint reduces its lesson to the acknowledgment, with no scolding or repeated instruction. Acknowledgments remain jump-first, sprint-second; gathering/fire lines wait behind this pair. Dialogue stays in the single companion queue and each line is once-only. Only the island teaches these; the waking world does not repeat them. Gathering and the ritual remain usable while waiting; their pending dialogue resumes after the two acknowledgments.
+
+Space and either Shift work on the island and in the waking world. Jump/sprint and the top-left player vitals box, guide portrait/name/“spirit guide” box, framed top-right explored-only minimap, separate realm maps and bottom-left material tally follow [section 09](09-the-journey-together.md). Stamina is functional; health/hunger are full labeled placeholders pending their systems, not new damage, food or death mechanics. Rendered feel, real pointer-lock tutorial sequencing and movement tuning await Relic's playtest.
