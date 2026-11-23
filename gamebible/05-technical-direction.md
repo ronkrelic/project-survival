@@ -34,3 +34,13 @@ The browser client currently loads pinned PeerJS 1.5.5 from jsDelivr, on demand 
 Relic explicitly chose validated craft receipts (option A): guests attach ordered craft receipts to existing block requests. The host validates each three-wood recipe cost against its own guest-yield ledger and derives wooden tool ownership before permitting stone breaks or tilling. This extends the existing request payload, alongside the op=till soil delta; it adds no message type. Tools remain local per-player state. Wild patches and growing crops are LOCAL-ONLY, not synchronized; shared farming is a later pass.
 
 PeerJS 1.5.5 is now vendored at docs/js/vendor/peerjs.min.js with its MIT notice, replacing the historical CDN loader above. The local bundle is the only primary path, with no CDN fallback. A live instrumented host boot reached 0.peerjs.com and generated a join code. This removes the PeerJS CDN dependency, not the public signaling service or the existing Three.js CDN dependency. Real two-device WebRTC/voice remains a separate check.
+
+
+## Stage Ten — The settling-in update
+
+Designed by Relic · November 23, 2026. Implemented proposals below remain vetoable by Relic; they are not prior approved dialogue.
+
+### Persistence and authority
+Version 1 uses localStorage keys project-survival:world:v1 and project-survival:person:v1; both records carry version:1 and seed:73021. World: deltas, soil entries, crop entries {x,y,z,wild,age}, wildHarvested, clock {seconds,day}, flags {lit,named,guideName,crossed}, guests keyed by private continuity identity with {bag,craftCount}. Personal: crossed, name, guideName, inventory (including tools), hunger, health, position {x,y,z}, crafts, identity. No DOM objects enter the clock record.
+Solo/host save world; every player saves personal state. Quiet active-time autosave about 30 seconds, pagehide and milestones. No mid-island save: uncrossed players Wake fresh (vetoable simplicity). Continue restores solo position only; multiplayer retains join spawn. Host restores saved world/ledger; guest continuity uses a random bearer identity, not a public display name. Local storage is convenience persistence, not cryptographic anti-cheat against browser editing. Begin anew asks confirmation before clearing both records. No save UI beyond loading choices.
+Existing break request/result/delta messages are extended for placement; no new message types. Host checks material balance, selected owned tool/tier, receipts, coordinates, range and intersection. Personal cooking, vitals, selection and sound remain local; crops remain local-only in multiplayer. Renderer-stub tests do not establish two-device transport or native visual quality.
