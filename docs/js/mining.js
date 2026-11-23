@@ -11,7 +11,7 @@ export function targetBlock(world,origin,direction,reach=5){
  }return null;
 }
 export function requiredTool(id){return [1,11,14,15,17].includes(id)?'wooden shovel':[5,6].includes(id)?'wooden axe':[2,3,12,13].includes(id)?'wooden pickaxe':null;}
-export function miningSeconds(id,bag={}){const base=materials[id]?.seconds??Infinity,tool=requiredTool(id);return tool&&!bag[tool]?(tool==='wooden pickaxe'?Infinity:base*3):base;}
+export function miningSeconds(id,bag={},selected=null){const base=materials[id]?.seconds??Infinity,tool=requiredTool(id);return tool&&!(selected===tool&&bag[tool])?(tool==='wooden pickaxe'?Infinity:base*3):base;}
 export class Mining{
  constructor(scene,camera,world,player,canvas){
   Object.assign(this,{scene,camera,world,player,canvas,held:false,elapsed:0,target:null,motes:[],clock:0});
@@ -43,7 +43,7 @@ export class Mining{
   let hum=0;
   if(t){
    this.outline.position.set(t.x+.5,t.y+.5,t.z+.5);this.glow.position.copy(this.outline.position);
-   const m=materials[t.id],seconds=miningSeconds(t.id,this.player.materials);
+   const m=materials[t.id],seconds=miningSeconds(t.id,this.player.materials,this.world.waking?this.player.selectedTool:null);
    if(this.held&&active){
     if(Number.isFinite(seconds))this.elapsed+=dt;else {this.elapsed=0;if(requiredTool(t.id)==='wooden pickaxe')window.grin?.guide.say('stone-edge',"Stone won't yield to hands alone. It asks for an edge.");}
     if(breakable(t.id)&&Number.isFinite(seconds)){
