@@ -6,7 +6,7 @@ import {mesh} from './meshing.js';
 export class World {
  constructor(scene,seed){
   this.scene=scene;this.seed=seed;this.chunks=new Map();this.pending=[];this.ready=[];this.busy=false;this.loaded=false;this.dirty=new Set();
-  this.waking=false;this.edits=new Map();this.wanted=new Set();
+  this.farmland=new Map();this.waking=false;this.edits=new Map();this.wanted=new Set();
   this.material=new THREE.MeshBasicMaterial({vertexColors:true});
   // Fixed 8x8 envelope, loaded once. Never follow the player or evict chunks.
   for(let cz=MIN_CHUNK;cz<=MAX_CHUNK;cz++)for(let cx=MIN_CHUNK;cx<=MAX_CHUNK;cx++)this.pending.push({cx,cz});
@@ -26,6 +26,11 @@ export class World {
   const object=new THREE.Mesh(g,this.material);this.scene.add(object);this.chunks.set(key,{...data,revision:0,meshedRevision:0,positions:null,colors:null,object});
   if(this.waking){const c=this.chunks.get(key);if(this.edits.has(key)){c.revision++;this.dirty.add(key);}for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dz)continue;const k=this.key(data.cx+dx,data.cz+dz),n=this.chunks.get(k);if(n){n.revision++;this.dirty.add(k);}}}
  }
+ till(x,y,z){
+  const id=this.block(x,y,z);if(![1,11,14,15].includes(id)||this.block(x,y+1,z))return false;
+  const key=(this.waking?'waking':'island')+':'+[x,y,z].join(':');this.farmland.set(key,{x,y,z});this.paintSoil(x,y,z);return true;
+ }
+ paintSoil(x,y,z){const cx=Math.floor(x/SIZE),cz=Math.floor(z/SIZE),c=this.chunks.get(this.key(cx,cz));if(!c)return;const i=index(x-cx*SIZE,y,z-cz*SIZE);if(![1,11,14,15,17].includes(c.blocks[i]))return;c.blocks[i]=17;c.revision++;this.dirty.add(this.key(cx,cz));}
  block(x,y,z){
   if(y<0||y>=HEIGHT)return 0;
   const cx=Math.floor(x/SIZE),cz=Math.floor(z/SIZE),c=this.chunks.get(this.key(cx,cz));
@@ -38,7 +43,7 @@ export class World {
   const i=index(x-cx*SIZE,y,z-cz*SIZE);c.blocks[i]=0;
   if(this.waking){const k=this.key(cx,cz);if(!this.edits.has(k))this.edits.set(k,new Set());this.edits.get(k).add(i);}
   let sun=15;for(let yy=HEIGHT-1;yy>=0;yy--){const i=index(x-cx*SIZE,yy,z-cz*SIZE);if(c.blocks[i])sun=0;c.light[i]=sun;}
-  appendDelta({x,y,z},id,'remove');
+  this.farmland.delete((this.waking?'waking':'island')+':'+[x,y,z].join(':'));appendDelta({x,y,z},id,'remove');
   // Include diagonal neighbours for corner ambient occlusion as well as faces.
   for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
    const k=this.key(cx+dx,cz+dz),n=this.chunks.get(k);if(n){n.revision++;this.dirty.add(k);}
@@ -82,6 +87,7 @@ export class World {
    if(!this.failed){this.inflight=c;this.worker.postMessage({...c,seed:this.seed,waking:this.waking});}
    else{const chunk=(this.waking?generateWaking:generate)(c.cx,c.cz,this.seed);this.ready.push({...chunk,...mesh(chunk,this.seed)});this.busy=false;}
   }
+  for(const [k,p] of this.farmland)if(k.startsWith(this.waking?'waking:':'island:')&&this.block(p.x,p.y,p.z)!==17)this.paintSoil(p.x,p.y,p.z);
   this.loaded=this.waking||this.chunks.size===64;
  }
 }
