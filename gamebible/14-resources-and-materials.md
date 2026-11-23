@@ -114,3 +114,13 @@ Sunmeadow grain is the only edible food this stage. One I-grid click consumes on
 
 **Vetoable implementation tuning:** hunger/health 0–100; hunger drains 1 per 15 play-seconds (25 minutes full to empty), starvation costs 1 health per 5 seconds. Grain restores 25 hunger. Health regenerates 1 per 5 seconds at hunger **90 or above** (a proposed nourished zone, not Relic’s literal full-only wording). Low warning at 25 or below, re-armed only by eating to at least 40. Fainting lasts four seconds with a soft dark fade; revival restores hunger 30 and health 20. To make “20 and climbing” real, guide-fed care grants 25 seconds of recovery at 1 health/5 seconds even below 90 (up to 5 extra health); it does not stack with nourished regeneration. This temporary feeding-care exception is vetoable. No offline catch-up; active session time only. Stamina is unchanged.
 
+
+
+## Stage Ten — The settling-in update
+
+Designed by Relic · November 23, 2026. Implemented proposals below remain vetoable by Relic; they are not prior approved dialogue.
+
+### Stone tools and hearth food
+Each stone axe/hoe/pickaxe/shovel costs 2 wood + 3 stone. Stone-tier speed is 1.5 times wooden (vetoable tuning); representative stone mining is wooden 1.5 seconds, stone 1.0 second. Hands make no progress on stone. Wooden tools retain their existing 3-wood cost.
+The canyon-red material is canonically ECHOSTONE, pickaxe-class, stone-like and placeable. Proposed vetoable ore name: hearthglow ore. Deterministic veins overlay canyon walls and frost peaks, 2–12 cells below the surface, without changing biome/height generation. Only selected stone pickaxe can mine it; hands and wooden pickaxe make zero progress. Ore is gathered only: uses are future, not implemented.
+Within five blocks of the lit waking hearth, C additionally shows hearth recipes. Proposed names/numbers (all vetoable): hearth bread costs 3 grain, restores 60 hunger + 2 health; sunseed cakes cost 2 grain + 2 seeds, restore 40 hunger + 4 health. Each recipe yields one. Click food in inventory to eat; values cap at 100. Cooking is waking-world-only and personal, not host crafting receipts. Grain remains 25 hunger. No durability, water, weather, danger or death added.
