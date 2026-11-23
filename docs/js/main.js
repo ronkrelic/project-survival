@@ -182,11 +182,42 @@ function updateCrossing(dt){
  decks.forEach(d=>{const gone=crossing.crossed&&d.position.z>crossing.furthest+3;d.material.opacity=THREE.MathUtils.damp(d.material.opacity,gone?0:crossing.manifest,2,dt);d.position.y=bridgeY(Math.floor(d.position.z))+.5-(1-crossing.manifest)*3;});
 }
 
+
+// Quiet session cartography: unknown cells are never sampled for display.
+const hud=document.createElement('aside');hud.id='waking-hud';hud.setAttribute('aria-label','Companion and explored ground');hud.style.cssText='position:fixed;left:18px;bottom:18px;z-index:8;display:none;align-items:center;gap:12px;max-width:calc(100% - 36px);pointer-events:none;color:#f3cbb7;font:12px Georgia,serif';
+const face=document.createElement('img');face.src='../concept-art/ember-icon.jpg';face.alt='Ember';face.width=48;face.height=48;face.style.cssText='width:48px;height:48px;object-fit:cover;border-radius:50%;filter:saturate(.7) contrast(.88);box-shadow:0 0 18px #f0bc9630';
+// Pages publishes /docs only; the committed portrait is fetched from the same repo.
+face.src='https://raw.githubusercontent.com/ronkrelic/project-survival/main/concept-art/ember-icon.jpg';
+const map=document.createElement('canvas');map.id='explored-map';map.width=map.height=144;map.setAttribute('aria-label','Explored ground; mist hides the unknown');map.style.cssText='width:120px;height:120px;border-radius:32%;opacity:.85;box-shadow:0 0 24px #161d2860';
+mining.tally.style.cssText='max-width:240px;line-height:1.7;color:#e0d4c5;opacity:.85';hud.append(face,map,mining.tally);document.body.append(hud);
+const plate=document.createElement('div');plate.id='guide-nameplate';plate.textContent='Ember';plate.style.cssText='position:fixed;left:0;top:0;z-index:9;display:none;pointer-events:none;color:#f3cbb7;font:13px Georgia,serif;letter-spacing:.04em;text-shadow:0 1px 8px #352533;transform:translate(-50%,-100%)';document.body.append(plate);
+guide.name='Ember';
+const atlas={island:new Map(),waking:new Map(),clock:1};
+const mapColors={1:'#789e8b',2:'#ac876e',3:'#ab8182',4:'#777688',5:'#927866',6:'#87a08a',7:'#8abbb2',8:'#b2a0bb',9:'#8c7378',10:'#d5d1b0'};
+function updateHUD(dt){
+ hud.style.display=session.started?'flex':'none';
+ plate.textContent=guide.name||'Ember';
+ const point=guide.body.position.clone();point.y+=.38;point.project(camera);
+ const visible=session.started&&!crossing.veil&&point.z>-1&&point.z<1&&Math.abs(point.x)<.98&&Math.abs(point.y)<.98;
+ plate.style.display=visible?'block':'none';plate.style.left=(point.x*.5+.5)*innerWidth+'px';plate.style.top=(-point.y*.5+.5)*innerHeight+'px';
+ if(!session.started||crossing.veil)return;
+ const book=world.waking?atlas.waking:atlas.island,cx=Math.floor(player.x/2),cz=Math.floor(player.z/2);atlas.clock+=dt;
+ if(atlas.clock>=.2){atlas.clock=0;
+  for(let dz=-3;dz<=3;dz++)for(let dx=-3;dx<=3;dx++){if(dx*dx+dz*dz>9)continue;const x=(cx+dx)*2,z=(cz+dz)*2;
+   if(!world.chunks.has(world.key(Math.floor(x/32),Math.floor(z/32))))continue;
+   let color='#89979e';for(let y=111;y>=0;y--){const id=world.block(x,y,z);if(id){color=mapColors[id]||color;break;}}book.set((cx+dx)+','+(cz+dz),color);
+  }
+ }
+ const ctx=map.getContext('2d');ctx.fillStyle='#202735';ctx.fillRect(0,0,144,144);
+ for(let dz=-24;dz<=24;dz++)for(let dx=-24;dx<=24;dx++){const color=book.get((cx+dx)+','+(cz+dz));if(color){ctx.fillStyle=color;ctx.fillRect(72+dx*3,72+dz*3,3,3);}}
+ ctx.fillStyle='#f3cbb7';ctx.beginPath();ctx.arc(73,73,2.2,0,Math.PI*2);ctx.fill();
+}
+
 let last=performance.now();
-function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;world.update(player.x,player.z);if(world.loaded&&!session.started){wakeButton.disabled=false;wakeHint.textContent='Ready when you are.';}if(world.loaded&&session.started){if(!crossing.veil)player.update(dt);updateRitual(dt);updateCrossing(dt);if(!crossing.veil)mining.update(dt);attention.update();guide.update(dt);}updateSky(dt);
+function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;world.update(player.x,player.z);if(world.loaded&&!session.started){wakeButton.disabled=false;wakeHint.textContent='Ready when you are.';}if(world.loaded&&session.started){if(!crossing.veil)player.update(dt);updateRitual(dt);updateCrossing(dt);if(!crossing.veil)mining.update(dt);attention.update();guide.update(dt);}updateSky(dt);updateHUD(dt);
  const rim=world.waking?0:crossing.manifest>0&&player.z<-96?0:THREE.MathUtils.smoothstep(islandRadius(player.x,player.z),.55,1);const held=player.mistStrength||0;scene.fog.density=.012-phase.value*.004+rim*.034+held*.075;
  scene.fog.color.copy(fogBase).lerp(new THREE.Color(0xffe5cf),held*.55);
  sky.position.copy(camera.position);renderer.render(scene,camera);}
 requestAnimationFrame(frame);
 // Read-only inspection seam for desktop smoke tests; never displayed in-world.
-window.grin={session,seed,player,world,renderer,scene,camera,mining,attention,guide,phase,sky,ritual,hearth,aurora,updateRitual,updateSky,crossing,bridge,shore,updateCrossing,acceptGuideName};
+window.grin={session,seed,player,world,renderer,scene,camera,mining,attention,guide,phase,sky,ritual,hearth,aurora,updateRitual,updateSky,crossing,bridge,shore,updateCrossing,acceptGuideName,atlas,updateHUD};
