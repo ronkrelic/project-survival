@@ -3,6 +3,7 @@ import {World} from './world.js';
 import {Player} from './player.js';
 import {terrainHeight,wakingHeight,hash,islandRadius,sparkNodes} from './generation.js';
 import {Mining} from './mining.js';
+import {createMusic} from './music.js';
 // Batch Three - Relic, November 23, 2026. Local comfort settings.
 const settings={sfx:1,music:1,sensitivity:1};
 let settingsPanel=null;
@@ -552,6 +553,7 @@ this.sfx=a.createGain();this.sfx.gain.value=settings.sfx;
 this.sfx.connect(this.master);
 this.music=a.createGain();this.music.gain.value=settings.music;
 this.music.connect(this.master);
+music.unlock(a,this.music);
 const buffer=a.createBuffer(1,a.sampleRate*2,a.sampleRate),d=buffer.getChannelData(0);let n=0;for(let i=0;i<d.length;i++){n=n*.97+(Math.random()*2-1)*.03;d[i]=n;}const loop=(frequency)=>{const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();s.buffer=buffer;s.loop=true;f.type='lowpass';f.frequency.value=frequency;g.gain.value=0;s.connect(f).connect(g).connect(this.sfx);
 s.start();return {source:s,filter:f,gain:g};};this.wind=loop(400);this.fire=loop(1400);}this.context.resume().catch(()=>{});}catch{}},
  play(kind,freq=260,duration=.12,volume=.08){if(this.muted||!this.context||this.context.state!=='running')return false;this.events[kind]=(this.events[kind]||0)+1;try{const a=this.context,o=a.createOscillator(),g=a.createGain();o.type=kind.startsWith('mine')?'triangle':'sine';o.frequency.setValueAtTime(freq,a.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(30,freq*.65),a.currentTime+duration);g.gain.setValueAtTime(volume,a.currentTime);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+duration);o.connect(g).connect(this.sfx);o.start();o.stop(a.currentTime+duration+.02);return true;}catch{return false;}},
@@ -559,6 +561,8 @@ s.start();return {source:s,filter:f,gain:g};};this.wind=loop(400);this.fire=loop
 muteButton.textContent=this.muted?'Sound off':'Sound on';muteButton.setAttribute('aria-pressed',String(this.muted));},
  tick(dt){if(!this.context||!session.started)return;const a=this.context,biome=world.waking?biomeAt(player.x,player.z,seed):'Island';this.wind.filter.frequency.value=biome==='Forest'?240:biome==='Frost Peaks'?650:400;this.wind.gain.gain.setTargetAtTime(.035+Math.sin(performance.now()/11000)*.008,a.currentTime,.5);const h=world.waking?wakingHearth.position:hearth.position,near=ritual.lit?Math.max(0,1-Math.hypot(player.x-h.x,player.y-h.y,player.z-h.z)/12):0;this.fire.gain.gain.setTargetAtTime(near*.12,a.currentTime,.3);if(near>0&&Math.random()<dt*5)this.play('hearth',80+Math.random()*150,.04,.02*near);const moved=Math.hypot(player.x-this.last.x,player.z-this.last.z);this.last={x:player.x,z:player.z};if(moved<1&&player.grounded)this.step+=moved;if(this.step>.9){this.step=0;const id=world.block(Math.floor(player.x),Math.floor(player.y-.1),Math.floor(player.z));this.play('step:'+id,[2,3,12,13,18].includes(id)?190:id===5?115:75,.07,.05);}if(mining.held&&mining.elapsed>0){this.mine+=dt;if(this.mine>.42/Math.max(1,mining.feedbackSpeed||1)){this.mine=0;const id=mining.target?.id||0;const tier=mining.feedbackTier||'hands';this.play('mine:'+tier+':'+id,(tier==='stone'?220:tier==='wood'?160:110)*([2,3,12,13,18].includes(id)?1.2:1),tier==='stone'?.14:.09,tier==='stone'?.065:.045);}}else this.mine=0;if(guide.active!==this.lastLine){this.lastLine=guide.active;if(guide.active)this.play('guide',780,.35,.035);}if(nourishment.faintTime>0&&!this.lastFaint)this.play('faint',140,1,.06);if(nourishment.revivals>this.lastRevival)this.play('revival',520,.8,.05);this.lastFaint=nourishment.faintTime;this.lastRevival=nourishment.revivals;if(this.muted&&mining.gain)mining.gain.gain.value=0;}
 };
+const music=createMusic();window.grin.music=music;
+const musicHUD=updateHUD;updateHUD=function(dt){musicHUD(dt);if(session.started)music.update({waking:world.waking,biome:world.waking?biomeAt(player.x,player.z,seed):'Island',seconds:rhythm.seconds,phase:phase.name,nearHearth:nearLitHearth()});};
 const muteButton=document.createElement('button');muteButton.id='mute-sound';muteButton.textContent='Sound on';muteButton.title='Mute game sounds';muteButton.setAttribute('aria-pressed','false');muteButton.style.cssText='position:fixed;right:20px;top:234px;padding:7px 12px;color:#d8c9b8;background:#292938cc;border:1px solid #99857c55;border-radius:10px;font:12px Georgia;z-index:13';muteButton.onclick=()=>{sound.unlock();sound.mute();};document.body.append(muteButton);sound.mute(sound.muted);addEventListener('pointerdown',()=>sound.unlock(),{passive:true});addEventListener('keydown',e=>{if(!e.repeat)sound.unlock();});
 startCrackle=function(){sound.unlock();};
 const soundEat=nourishment.eat.bind(nourishment);nourishment.eat=function(){const ok=soundEat();if(ok)sound.play('eat',320,.18,.07);return ok;};const soundCooked=eatCooked;eatCooked=function(name){const ok=soundCooked(name);if(ok)sound.play('eat',320,.18,.07);return ok;};window.grin.cooking.eat=name=>eatCooked(name);
