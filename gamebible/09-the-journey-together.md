@@ -83,3 +83,20 @@ Multiplayer: tools/recipes/mining remain per-player local state. Soil uses the e
 PeerJS 1.5.5 is vendored at docs/js/vendor/peerjs.min.js with its full MIT notice. The loader uses that local copy only, without a CDN fallback. The public 0.peerjs.com signaling broker and WebRTC networking are still required; Three.js still uses its existing CDN import. Vendoring PeerJS does not make the entire game offline or dependency-free.
 
 Relic decision, November 22, 2026: keep validated craft receipts (option A). Guests attach the ordered receipts to existing block requests; the host validates their wood costs against its own guest-yield ledger, with no new message type. This protocol extension is expressly approved, not an unresolved implementation choice.
+
+
+## Stage Nine — nourishment as care — Relic, November 23, 2026
+
+This section supersedes the earlier inert-health/hunger and carried-but-not-eaten Stage Five/Eight notes. Relic’s design: hunger drains slowly; empty hunger costs health; zero health means fainting, NEVER death. The guide feeds the traveler, who wakes where they fell with inventory, tools and position intact. No drops or penalties beyond lost time. All nourishment and the guide are strictly per-player LOCAL state. No multiplayer message types or protocol changes; host validation and ordered craft receipts stay as before.
+
+The two HUD bars are now active, with no placeholder labels. The I grid offers a quiet grain button (hover/focus hint: “Eat sunmeadow grain · restores 25 hunger”). Clicking or keyboard-activating it eats one; seeds are not edible. Proposed journal voice, vetoable: “Sunmeadow warmth, carried from the field into you.” At full hunger, one gentle decline per eating cycle: “You're not hungry right now.” No item is consumed. The world keeps moving while inventory is open.
+
+A faint softly darkens the screen, prevents movement/mining/interactions for four seconds, then returns the traveler exactly where they fell. The local guide comes beside them and speaks; no harsh effects or death screen. Remote avatars need no special faint pose this stage.
+
+Approved verbatim by Relic — revival:
+
+> Easy. Slowly. You went too long without food, and the world went dark without asking you. I fed you what I could. Don't let it get that far again. The world is better with you awake.
+
+Approved verbatim by Relic — low hunger (once per hysteresis cycle):
+
+> Your hands are colder than they should be. Eat something before the dark comes.
