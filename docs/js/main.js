@@ -427,9 +427,33 @@ window.grin.nourishment=nourishment;
 // Stage Ten 1 — Relic, 2026-11-23. Selection supersedes context auto-apply.
 const hotbarOrder=['wooden pickaxe','wooden axe','wooden shovel','wooden hoe','stone pickaxe','stone axe','stone shovel','stone hoe','earth','sand','snow','stone','echostone','wood'];
 const hotbar=document.createElement('nav');hotbar.id='hotbar';hotbar.setAttribute('aria-label','Selected tool and carried blocks');hotbar.style.cssText='position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:4px;padding:8px;background:#292938ed;border:1px solid #99857c88;border-radius:14px;z-index:12';document.body.append(hotbar);
+const hotbarName=document.createElement('div'),hotbarTip=document.createElement('div');
+hotbarName.id='hotbar-name';hotbarName.setAttribute('role','status');
+hotbarTip.id='hotbar-tip';hotbarTip.setAttribute('role','tooltip');hotbarTip.hidden=true;
+document.body.append(hotbarName,hotbarTip);
+let hotbarNameTimer=0,hotbarSelection=null;
+function showHotbarName(){
+hotbarName.textContent=player.selectedTool||'Bare hands';hotbarName.classList.add('visible');
+hotbarName.style.bottom=(innerHeight-hotbar.getBoundingClientRect().top+10)+'px';
+clearTimeout(hotbarNameTimer);
+hotbarNameTimer=setTimeout(()=>hotbarName.classList.remove('visible'),1600);
+}
+function showHotbarTip(b,name){
+hotbarTip.textContent=name||'Bare hands';hotbarTip.hidden=false;
+const r=b.getBoundingClientRect();
+const half=hotbarTip.getBoundingClientRect().width/2+8;
+hotbarTip.style.left=Math.max(half,Math.min(innerWidth-half,r.left+r.width/2))+'px';
+hotbarTip.style.bottom=(innerHeight-hotbar.getBoundingClientRect().top+44)+'px';
+b.setAttribute('aria-describedby','hotbar-tip');
+}
+function hideHotbarTip(b){hotbarTip.hidden=true;b.removeAttribute('aria-describedby');}
 let hotbarStamp='';player.selectedTool=null;
+
 function selectSlot(name){player.selectedTool=name&&player.materials[name]>0?name:null;mining.cancel();hotbarStamp='';refreshHotbar();}
-function refreshHotbar(){const stamp=[world.waking,session.started,inventoryRevision,player.selectedTool].join(":");if(stamp===hotbarStamp)return;hotbarStamp=stamp;const slots=hotbarOrder.filter(k=>player.materials[k]>0);hotbar.hidden=!session.started;hotbar.style.display=hotbar.hidden?'none':'flex';if(player.selectedTool&&!slots.includes(player.selectedTool))player.selectedTool=null;hotbar.replaceChildren();[null,...slots].forEach((name,i)=>{const b=document.createElement('button');b.textContent='';const key=document.createElement('small'),count=document.createElement('strong');key.className='slot-key';key.textContent=i<=9?i:'↕';count.className='slot-count';count.textContent=name?player.materials[name]:'';b.append(key,count);b.insertAdjacentHTML('afterbegin',itemIcon(name,28));b.title=name||'Bare hands';b.setAttribute('aria-label',(name||'Bare hands')+(name?': '+player.materials[name]:''));b.setAttribute('aria-pressed',String(player.selectedTool===name));b.style.cssText='width:53px;min-height:54px;overflow-wrap:anywhere;font:10px Georgia;color:#ead9c7;border-radius:8px;border:1px solid '+(player.selectedTool===name?'#ebd1a5':'#99857c55')+';background:#373344';b.onclick=()=>selectSlot(name);hotbar.append(b);});}
+function refreshHotbar(){const stamp=[world.waking,session.started,inventoryRevision,player.selectedTool].join(":");if(stamp===hotbarStamp)return;hotbarStamp=stamp;const slots=hotbarOrder.filter(k=>player.materials[k]>0);hotbar.hidden=!session.started;hotbar.style.display=hotbar.hidden?'none':'flex';if(player.selectedTool&&!slots.includes(player.selectedTool))player.selectedTool=null;
+if(hotbarSelection!==player.selectedTool){hotbarSelection=player.selectedTool;showHotbarName();}
+hotbarTip.hidden=true;hotbar.replaceChildren();[null,...slots].forEach((name,i)=>{const b=document.createElement('button');b.textContent='';const key=document.createElement('small'),count=document.createElement('strong');key.className='slot-key';key.textContent=i<=9?i:'↕';count.className='slot-count';count.textContent=name?player.materials[name]:'';b.append(key,count);b.insertAdjacentHTML('afterbegin',itemIcon(name,28));b.onpointerenter=()=>showHotbarTip(b,name);b.onpointerleave=()=>hideHotbarTip(b);
+b.onfocus=()=>showHotbarTip(b,name);b.onblur=()=>hideHotbarTip(b);b.setAttribute('aria-label',(name||'Bare hands')+(name?': '+player.materials[name]:''));b.setAttribute('aria-pressed',String(player.selectedTool===name));b.style.cssText='width:53px;min-height:54px;overflow-wrap:anywhere;font:10px Georgia;color:#ead9c7;border-radius:8px;border:1px solid '+(player.selectedTool===name?'#ebd1a5':'#99857c55')+';background:#373344';b.onclick=()=>selectSlot(name);hotbar.append(b);});}
 addEventListener('keydown',e=>{if(!session.started||!world.waking||e.target.matches?.('input,textarea,[contenteditable="true"]'))return;if(/^Digit[0-9]$/.test(e.code)){e.preventDefault();const i=Number(e.code.slice(-1));selectSlot(i?hotbarOrder.filter(k=>player.materials[k]>0)[i-1]:null);}});
 renderer.domElement.addEventListener('wheel',e=>{if(!world.waking||document.pointerLockElement!==renderer.domElement)return;e.preventDefault();const list=[null,...hotbarOrder.filter(k=>player.materials[k]>0)];selectSlot(list[(list.indexOf(player.selectedTool)+(e.deltaY>0?1:list.length-1))%list.length]);},{passive:false});
 const hotbarHUD=updateHUD;updateHUD=function(dt){hotbarHUD(dt);refreshHotbar();};window.grin.hotbar={select:selectSlot,refresh:refreshHotbar,order:hotbarOrder,element:hotbar};
@@ -503,7 +527,11 @@ let cookingNear=false;const cookHUD=updateHUD;updateHUD=function(dt){cookHUD(dt)
 const DAY_SECONDS=840,clockReadout=document.createElement('div');clockReadout.id='world-clock';clockReadout.style.cssText='position:fixed;right:20px;top:192px;padding:7px 12px;color:#d8c9b8;background:#292938cc;border:1px solid #99857c55;border-radius:10px;font:12px Georgia;z-index:12';document.body.append(clockReadout);
 const starPositions=[];for(let i=0;i<180;i++){const a=hash(i,41,seed)*Math.PI*2,y=.15+hash(i,42,seed)*.85,r=Math.sqrt(1-y*y);starPositions.push(Math.cos(a)*r*500,y*500,Math.sin(a)*r*500);}const starGeometry=new THREE.BufferGeometry();starGeometry.setAttribute('position',new THREE.Float32BufferAttribute(starPositions,3));const nightStars=new THREE.Points(starGeometry,new THREE.PointsMaterial({color:0xe4d6c7,size:1.5,transparent:true,opacity:0,depthWrite:false}));scene.add(nightStars);
 const islandSky=updateSky;let firstDusk=false;
-function tickRhythm(dt){if(!world.waking){clockReadout.hidden=true;nightStars.visible=false;return;}clockReadout.hidden=false;nightStars.visible=true;if(session.started&&Number.isFinite(dt)&&dt>0){rhythm.seconds+=dt;while(rhythm.seconds>=DAY_SECONDS){rhythm.seconds-=DAY_SECONDS;rhythm.day++;saveGame();}}const s=rhythm.seconds,night=s>=600;const light=s<60?.35+.65*s/60:s<540?1:s<600?1-.74*(s-540)/60:s<780?.26:.26+.09*(s-780)/60;phase.value=light;phase.name=s<60?'Dawn':s<540?'Daylight':s<600?'Dusk':s<780?'Night':'Dawn';sky.material.uniforms.progress.value=light;fogBase.copy(nightFog).lerp(dawnFog,light);if(world.material.userData.shader){world.material.userData.shader.uniforms.phaseLight.value=light;world.material.userData.shader.uniforms.firstFire.value=0;world.material.userData.shader.uniforms.wakingNight.value=1-light;}nightStars.position.copy(camera.position);nightStars.material.opacity=(1-light)*.8;aurora.visible=light<.8;aurora.position.set(player.x,player.y+48,player.z-65);aurora.userData.wakingClock=(aurora.userData.wakingClock||0)+(Number.isFinite(dt)?Math.max(0,dt):0);aurora.children.forEach((r,i)=>{r.material.opacity=.12*(1-light);const p=r.geometry.attributes.position;for(let j=0;j<p.count;j++)p.setZ(j,Math.sin(p.getX(j)*.16+aurora.userData.wakingClock*.22+i+p.getY(j)*.06)*2.7);p.needsUpdate=true;});wakingFireLight.intensity=1+(1-light)*2;wakingFlame.material.opacity=.7+(1-light)*.25;const minutes=Math.floor(s<600?360+s/600*720:1080+(s-600)/240*720)%1440;clockReadout.textContent='Day '+rhythm.day+' · '+String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0')+' · '+phase.name;if(s>=540&&!firstDusk){firstDusk=true;/* No unapproved guide line is spoken. */}}
+function tickRhythm(dt){if(!world.waking){clockReadout.hidden=true;nightStars.visible=false;return;}clockReadout.hidden=false;nightStars.visible=true;if(session.started&&Number.isFinite(dt)&&dt>0){rhythm.seconds+=dt;while(rhythm.seconds>=DAY_SECONDS){rhythm.seconds-=DAY_SECONDS;rhythm.day++;saveGame();}}const s=rhythm.seconds,night=s>=600;const light=s<60?.35+.65*s/60:s<540?1:s<600?1-.74*(s-540)/60:s<780?.26:.26+.09*(s-780)/60;phase.value=light;phase.name=s<60?'Dawn':s<540?'Daylight':s<600?'Dusk':s<780?'Night':'Dawn';sky.material.uniforms.progress.value=light;fogBase.copy(nightFog).lerp(dawnFog,light);if(world.material.userData.shader){world.material.userData.shader.uniforms.phaseLight.value=light;world.material.userData.shader.uniforms.firstFire.value=0;world.material.userData.shader.uniforms.wakingNight.value=1-light;}nightStars.position.copy(camera.position);nightStars.material.opacity=(1-light)*.8;aurora.visible=light<.8;aurora.position.set(player.x,player.y+48,player.z-65);aurora.userData.wakingClock=(aurora.userData.wakingClock||0)+(Number.isFinite(dt)?Math.max(0,dt):0);aurora.children.forEach((r,i)=>{r.material.opacity=.12*(1-light);const p=r.geometry.attributes.position;for(let j=0;j<p.count;j++)p.setZ(j,Math.sin(p.getX(j)*.16+aurora.userData.wakingClock*.22+i+p.getY(j)*.06)*2.7);p.needsUpdate=true;});wakingFireLight.intensity=1+(1-light)*2;wakingFlame.material.opacity=.7+(1-light)*.25;const minutes=Math.floor(s<600?360+s/600*720:1080+(s-600)/240*720)%1440;clockReadout.textContent='Day '+rhythm.day+' · '+String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0')+' · '+phase.name;if(session.started&&player.awake&&s>=540&&s<780&&!arcFor().firstDusk){
+arcFor().firstDusk=true;
+guide.say('first-dusk',"The sun is setting. Your first dusk out here. The dark isn't empty, you know that now. Light something warm, and I'll keep watch with you.");
+saveGame();
+}}
 updateSky=function(dt){if(!world.waking)return islandSky(dt);tickRhythm(dt);};window.grin.rhythm.tick=tickRhythm;window.grin.rhythm.cycleSeconds=DAY_SECONDS;window.grin.rhythm.readout=clockReadout;
 
 // Stage Ten 8 — small synthesized sounds, no files or music.
@@ -540,6 +568,13 @@ const carriedStyle=document.createElement('style');carriedStyle.textContent=`
 #hotbar button{width:54px!important;min-width:54px;min-height:58px!important;padding:4px 4px 14px;cursor:pointer}
 #inventory button[aria-pressed=true],#hotbar button[aria-pressed=true]{border-color:#d49b54!important;background:#d9c59b!important;box-shadow:inset 0 0 0 2px #f7ecd7,0 0 0 2px #d49b5470;transform:translateY(-2px)}
 .slot-key{position:absolute;left:3px;top:2px;font:10px Georgia;color:#71634f}
+#hotbar-name,#hotbar-tip{position:fixed;z-index:13;pointer-events:none;
+max-width:90vw;box-sizing:border-box;padding:7px 12px;border:1px solid #aa9475;
+border-radius:6px;background:#eadcc5f5;color:#514c49;font:14px/1.4 Georgia;
+text-align:center;box-shadow:0 3px 15px #302e3530;transform:translateX(-50%)}
+#hotbar-name{left:50%;opacity:0;transition:opacity .45s}
+#hotbar-name.visible{opacity:1}
+#hotbar-tip[hidden]{display:none}
 #inventory-character{display:flex;align-items:center;justify-content:center;gap:20px;min-height:120px;margin-bottom:16px;border:1px dashed #aa9475;border-radius:8px;background:#97aa9140;color:#796e60}
 #inventory-character svg{opacity:.35}#inventory-character p{max-width:220px;font:13px/1.5 Georgia;opacity:.7}
 #crafting button{background:#c6c6a9!important;color:#514c49!important;border-color:#aa9475!important;border-radius:6px!important}
@@ -548,7 +583,17 @@ const characterRegion=document.createElement('aside');characterRegion.id='invent
 
 // Light & Song: Relic, November 23 2026. Session milestones use ledger continuity identity.
 const islandArcs=new Map();
-function arcFor(identity=personalIdentity){if(!islandArcs.has(identity))islandArcs.set(identity,{firstFire:false,monolith:false,named:false,crossed:false});return islandArcs.get(identity);}
+function arcFor(identity=personalIdentity){if(!islandArcs.has(identity))islandArcs.set(identity,{firstFire:false,monolith:false,named:false,crossed:false,firstDusk:false});return islandArcs.get(identity);}
+// Batch Two — Relic, November 23, 2026. Arc flags travel with the local identity.
+const arcSnapshot=personalSnapshot;personalSnapshot=function(){
+const a=arcFor();return {...arcSnapshot(),arc:{firstFire:!!a.firstFire,monolith:!!a.monolith,
+named:!!a.named,crossed:!!a.crossed,firstDusk:!!a.firstDusk}};
+};
+const arcLoad=loadPersonal;loadPersonal=function(s,position=false){
+const ok=arcLoad(s,position);if(!ok)return false;
+const a=arcFor();for(const k of ['firstFire','monolith','named','crossed','firstDusk'])a[k]=s.arc?.[k]===true;
+return true;
+};
 const arcLight=ritual.light;
 ritual.light=function(){const lit=this.lit;const result=arcLight.call(this);if(result&&net.mode!=='guest')arcFor().firstFire=true;return result;};
 const arcRitual=updateRitual;
