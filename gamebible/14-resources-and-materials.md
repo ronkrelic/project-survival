@@ -79,3 +79,28 @@ Some things answer without leaving. The monolith hums and brightens under a held
 - Starfall mechanics.
 - Embercoal regeneration.
 - 
+
+## Stage Eight resource contract — Relic, November 22, 2026
+
+This revision replaces the earlier no-tools slice and the briefly implemented loose-stone idea. There are NO loose stones in the final stage. Hand-chop a tree slowly, then use that wood to make the first tools. All first-tier recipe cards are wooden:
+
+| Result (one) | Consumed materials |
+| --- | --- |
+| wooden axe | 3 wood |
+| wooden hoe | 3 wood |
+| wooden pickaxe | 3 wood |
+| wooden shovel | 3 wood |
+
+Costs are a **vetoable proposal**, wood-only with no binding or stone prerequisite. Matching tools apply automatically; no tier speed differences, durability, equip or hotbar. Dirt-like IDs 1/11/14/15 and farmland 17 use a shovel; trunk 5 and leaves 6 use an axe; stone 2/3/12/13 uses a pickaxe. Future ore blocks must join that stone class when introduced; this build has no separate ore block.
+
+| Material | Matching tool | Hands | With tool |
+| --- | --- | --- | --- |
+| earth, sand, snow, tilled earth | wooden shovel | 1.20 s | 0.40 s |
+| trunk wood | wooden axe | 2.70 s | 0.90 s |
+| leaves | wooden axe | 1.35 s | 0.45 s |
+| stone family / canyon-red | wooden pickaxe | zero progress | 1.50 s |
+| sparkstone (ritual exception) | none needed | 1.50 s | 1.50 s |
+
+Times are tuning calls; discrete 0.01-second probes measured wood at 2.71 seconds because of floating-point accumulation. Protected monolith/foundation remain protected. Sparkstone comes from the six pale surface seams, NOT from mist-catch; mist-catch only returns a falling traveler. Grass still grants earth and dryfiber. The 3 sparkstone + 5 dryfiber ritual is unchanged and needs no tool.
+
+**Proposed names, vetoable:** sunmeadow grain (crop and harvested food), sunmeadow seeds. Wild and mature cultivated crops yield 1 grain + 2 seeds; planting spends 1 seed in tilled soil. The grain occupies an ordinary inventory slot; food use/eating and cooking are deliberately absent. There is no hunger activation. Growth is session-only, four visible stages over three minutes, and crop/wild-patch state is local-only in multiplayer this stage.
