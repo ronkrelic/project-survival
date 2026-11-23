@@ -14,9 +14,9 @@ The guide's memory gets a verb: the player can ask “remember when?” and the 
 
 The player can hold up a found item and the guide reacts: curiosity, recognition, sometimes warning. Discovery is a shared act, not a loot notification.
 
-## The ember is the health bar
+## The ember as a future condition cue
 
-The player's condition lives in the light they carry: the ember's glow dims when the player is hurt, cold, or hungry. No abstract dial for core condition. When the player stands still, their hands cup the ember and it brightens — an idle moment.
+Future direction: the player's condition can live in the light they carry, the ember's glow dimming with hurt, cold or hunger; idle hands may cup and brighten it. This is not a current condition system. Relic's November 22, 2026 Stage Five revision supersedes the no-abstract-dial HUD restriction: the top-left player box displays health/hunger/stamina bars, with the guide's matte icon, session name and spirit guide label directly below. The framed explored-only minimap sits top right. Stamina is functional with Shift sprint, Space jumps; health/hunger stay full and inert, visibly marked not yet active. No damage, food or death mechanics are added. See [section 09](09-the-journey-together.md) for layout and tuning.
 
 ## Where he goes when dismissed
 
@@ -27,5 +27,5 @@ When the guide is sent away, he goes into the ember. Dismissed is not gone: talk
 - How the guide's knowledge state is modeled.
 - Memory/trigger architecture and dialogue content for asking about the past.
 - Show-and-tell reaction system and content per item type.
-- Exact condition-to-glow mapping, and whether hunger/health need any secondary display.
+- Future condition-to-glow mapping and health/food systems; Stage Five already decides the placeholder vitals bars, not their future mechanics.
 - Summon/recall input.
