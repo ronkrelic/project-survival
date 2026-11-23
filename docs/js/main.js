@@ -545,3 +545,26 @@ const carriedStyle=document.createElement('style');carriedStyle.textContent=`
 #crafting button{background:#c6c6a9!important;color:#514c49!important;border-color:#aa9475!important;border-radius:6px!important}
 `;document.head.append(carriedStyle);
 const characterRegion=document.createElement('aside');characterRegion.id='inventory-character';characterRegion.setAttribute('aria-label','Future character area, decorative placeholder');characterRegion.innerHTML='<svg width="55" height="88" viewBox="0 0 55 88" aria-hidden="true"><circle cx="27" cy="17" r="12" fill="#b58483"/><path d="M12 34 Q27 26 42 34 L46 65 L34 65 L32 85 L22 85 L20 65 L8 65 Z" fill="#748775"/></svg><p>A little space for the wanderer.<br>Character and equipment will rest here someday — not yet.</p>';inventory.insertBefore(characterRegion,inventoryRows);inventoryHint.textContent='I / Esc to close · click food to eat · click a carried block to pin · the world keeps moving';
+
+// Light & Song: Relic, November 23 2026. Session milestones use ledger continuity identity.
+const islandArcs=new Map();
+function arcFor(identity=personalIdentity){if(!islandArcs.has(identity))islandArcs.set(identity,{firstFire:false,monolith:false,named:false,crossed:false});return islandArcs.get(identity);}
+const arcLight=ritual.light;
+ritual.light=function(){const lit=this.lit;const result=arcLight.call(this);if(result&&net.mode!=='guest')arcFor().firstFire=true;return result;};
+const arcRitual=updateRitual;
+updateRitual=function(dt){arcRitual(dt);if(world.waking)return;const a=arcFor();
+ if(ritual.lit&&!a.firstFire){const dir=camera.getWorldDirection(new THREE.Vector3()),toward=hearth.position.clone().add(new THREE.Vector3(0,.25,0)).sub(camera.position);const aiming=toward.length()<5&&dir.dot(toward.normalize())>.94;
+  if(aiming&&mining.held&&document.pointerLockElement===renderer.domElement){a.tend=(a.tend||0)+dt;mining.elapsed=0;if(a.tend>=2){a.tend=0;if(net.mode==='guest'){if(net.ready)send(net.host,{type:'fire-request'});}else a.firstFire=true;}}else a.tend=0;
+ }
+ if(a.firstFire&&!a.monolith&&Math.hypot(player.x-12,player.z+62)<4){if(net.mode==='guest'){if(net.ready&&ritual.clock>(a.touchAfter||0)){a.touchAfter=ritual.clock+2;send(net.host,{type:'arc-touch'});}}else {a.monolith=true;net.monolith=true;}}
+ a.named=crossing.named;a.crossed=crossing.crossed;aurora.visible=ritual.lit&&a.monolith;
+};
+const arcCrossing=updateCrossing;updateCrossing=function(dt){if(!world.waking&&(!arcFor().firstFire||!arcFor().monolith))return;arcCrossing(dt);arcFor().named=crossing.named;arcFor().crossed=crossing.crossed;};
+const arcHost=hostMessage;hostMessage=function(c,m){if(m?.type==='fire-request'||m?.type==='arc-touch'){const p=net.people.get(c.peer);if(!c.psName||!c.psIdentity||!p||p.realm!=='island')return;const a=arcFor(c.psIdentity);
+ if(m.type==='arc-touch'){if(!a.firstFire||Math.hypot(p.x-12,p.z+62)>=4)return;a.monolith=true;net.monolith=true;send(c,{type:'arc-monolith'});return;}
+ if(Math.hypot(p.x-ritual.x,p.z-ritual.z)>=5)return;
+ if(!net.lit){const bag=guestBags.get(c.peer);if(!bag||(bag.sparkstone||0)<3||(bag.dryfiber||0)<5)return;arcHost(c,m);if(!net.lit)return;}
+ a.firstFire=true;send(c,{type:'dawn'});send(c,{type:'arc-first-fire'});return;
+ }return arcHost(c,m);};
+const arcGuest=guestMessage;guestMessage=function(m){if(m?.type==='arc-first-fire'){arcFor().firstFire=true;net.firePending=false;return;}if(m?.type==='arc-monolith'){if(arcFor().firstFire)arcFor().monolith=true;return;}return arcGuest(m);};
+window.grin.arc={current:arcFor,players:islandArcs};window.grin.netValidation.receive=(c,m)=>hostMessage(c,m);window.grin.netValidation.guest=m=>guestMessage(m);
