@@ -260,3 +260,18 @@ function refreshInventory(){const stamp=JSON.stringify(player.materials);if(stam
 addEventListener('keydown',e=>{if(!session.started||e.target.matches?.('input,textarea,[contenteditable="true"]'))return;if(e.code==='KeyI'&&!e.repeat){e.preventDefault();inventory.hidden=!inventory.hidden;refreshInventory();}else if(e.code==='Escape')inventory.hidden=true;});
 setInterval(()=>{if(!inventory.hidden)refreshInventory();},150);
 window.grin.inventory={panel:inventory,refresh:refreshInventory};
+
+// Stage Six: local memories, and a chat surface for a later connection.
+const journal=document.createElement('section');journal.id='status-log';journal.className='soft-panel';journal.style.cssText='position:fixed;right:18px;bottom:18px;z-index:20;width:min(320px,40vw);padding:12px;color:#ead9c7;background:#292938df;border:1px solid #99857c77;border-radius:14px;font:13px/1.5 Georgia,serif;display:none';
+const journalLines=document.createElement('div');journalLines.style.cssText='max-height:180px;overflow-y:auto;pointer-events:auto';journalLines.setAttribute('role','log');journalLines.setAttribute('aria-label','Status and conversation');
+const chatInput=document.createElement('input');chatInput.id='chat-input';chatInput.maxLength=280;chatInput.placeholder='Enter to speak · Esc to cancel';chatInput.setAttribute('aria-label','Message');chatInput.hidden=true;chatInput.style.cssText='box-sizing:border-box;width:100%;margin-top:8px;background:#373344;color:#f3d6bd;border:1px solid #99857c;border-radius:8px;padding:8px;font:inherit';journal.append(journalLines,chatInput);document.body.append(journal);
+const journalEntries=[];
+function logLine(text,sender=''){const row=document.createElement('div');row.textContent=(sender?sender+': ':'')+String(text);row.style.cssText='padding:3px 0;transition:opacity 10s';const bottom=journalLines.scrollHeight-journalLines.scrollTop-journalLines.clientHeight<24;journalLines.append(row);journalEntries.push({text:String(text),sender,time:Date.now()});while(journalEntries.length>100){journalEntries.shift();journalLines.firstChild.remove();}setTimeout(()=>{if(row.isConnected)row.style.opacity='.55';},30000);if(bottom)journalLines.scrollTop=journalLines.scrollHeight;}
+player.materials=new Proxy(player.materials,{set(target,key,value){const before=target[key]||0;target[key]=value;if(value>before)logLine('Gathered '+(value-before)+' '+String(key)+'.');return true;}});
+const updateLocalGuide=guide.update.bind(guide);let lastSpoken=null;
+guide.update=function(dt){updateLocalGuide(dt);if(this.mode==='speaking'&&this.active&&this.active!==lastSpoken){lastSpoken=this.active;logLine(this.active.text,this.name||'Ember');}};
+const conversation={enabled:false,send:null};
+function finishTyping(){chatInput.value='';chatInput.hidden=true;chatInput.blur();player.keys.clear();player.jumpQueued=false;}
+addEventListener('keydown',e=>{if(document.activeElement===chatInput){e.stopImmediatePropagation();player.keys.clear();player.jumpQueued=false;mining.cancel();if(e.code==='Enter'){e.preventDefault();const text=chatInput.value.trim();if(text&&conversation.send)conversation.send(text);finishTyping();}else if(e.code==='Escape'){e.preventDefault();finishTyping();}return;}if(e.code==='Enter'&&session.started&&conversation.enabled&&!e.target.matches?.('input,textarea,[contenteditable="true"]')){e.preventDefault();e.stopImmediatePropagation();inventory.hidden=true;player.keys.clear();player.jumpQueued=false;mining.cancel();document.exitPointerLock?.();chatInput.hidden=false;chatInput.focus();}},true);
+setInterval(()=>{journal.style.display=session.started?'block':'none';},150);
+window.grin.journal={entries:journalEntries,log:logLine,input:chatInput,conversation};
