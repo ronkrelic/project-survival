@@ -130,3 +130,13 @@ Effective speed is (material base seconds * 3) / selected effective mining secon
 Mining note interval is .42 / max(1,speed) seconds. Hands/wood/stone character uses 110/160/220Hz, with a 1.2 multiplier on stone-class blocks. Stone notes last .14s at .065 gain; other notes .09s at .045. Completion notes are 300/360/440Hz for hands/wood/stone, .22s at .045. Existing master mute is now remembered across sessions. No music was added.
 
 Controlled equal-duration .45s probes observed hands/wooden axe/stone axe particles 2/6/10 and mining-note counters 1/3/4, with distinct progress glow. A real barehand completion emitted the 300Hz completion note. DOM checks confirmed framed cells, counts, hands SVG, amber selection, character reserve and inventory click pinning. These checks do not establish aesthetic quality, comfortable native audio mix, pointer-lock feel or real two-device multiplayer.
+
+
+## Stage Eleven — Light & Song interface boundary
+Relic, November 23 2026. Partial delivery.
+
+The hotbar now appears whenever the session has started, including the island. A fresh island bag shows Hands only. This is presentation only: island tool-use, wheel and placement action guards remain unchanged. Existing icons, titles and slot selection behavior are preserved; the new fixed-order/fading-label refinement is still pending.
+
+Every player earns their own hearth and monolith milestones before their private naming/bridge sequence. At an already-lit hearth, aim and hold the existing interaction for two seconds to tend it; no second ignition cost is charged. No shared guide, name or dialogue changes.
+
+Pending settings use the existing parchment/sage/ochre palette and a button near mute, with music/SFX volume and mouse sensitivity saved in person:v1. This is a follow-up brief, not a shipped settings panel.
