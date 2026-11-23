@@ -2,6 +2,24 @@
 
 Designed and Made by Relic & Ember Studios. We wake worlds.
 
+
+## Current settling-in revision — Relic, November 23, 2026
+
+This status supersedes older stage notes below where they describe session-only deltas, no saves, v1 two-key saves or the pre-restyle interface. Implementation is committed; native visual/audio sign-off is NOT claimed.
+
+- [x] Eleven reviewed defects addressed: matched world identity/generation in a single atomic envelope; bounded pre-application save validation; continuity-ledger disconnect checkpoints; one hello restoration per connection; placement reservation/watermark reconciliation; constructed earth19 with no fiber loop; bounded incremental acknowledged craft receipts; independent waking aurora; restored notice Proxy; shared crop disposal; persistent mute.
+- [x] Inventory/hotbar warm framed grid, counts, hands SVG, amber selection and dim character reserve; click-to-eat/pinning/tool display retained. Existing C panel consistency pass only. No equipment or drag-and-drop.
+- [x] Speed-scaled mining particles/glow, tiered mining notes and completion tone. Colors and tuning are vetoable; exact values are in gamebible09.
+- [x] Dirty-driven HUD stamps, boundary-aware placement invalidation and compacted delta log. Save serialization measured, not rearchitected.
+- [x] Renderer-stub controlled probes: earth loop solo/host and bag correctness; duplicate hello; continuity reconnect; 1,100 acknowledged crafts; lost placement-result ledger reconciliation; corrupt/truncated/mixed saves and failed atomic write; save round-trip; fresh/continued waking aurora; gather notice after load; crop disposal; mute reinitialization; inventory structure/pinning; tier particle/sound counters; mining gates; planting/growth/harvest; cooking/eating; hunger/faint/revival; 840s clock rollover; barehand island sparkstone, held ritual and dawn/bridge manifestation. No captured harness console errors.
+- [ ] Native rendered aesthetics, audio mix and full human-paced island/bridge traversal remain unverified: WebGL context initialization fails in this browser; captures are black. Stub probes are not visual sign-off.
+- [ ] Real two-device WebRTC multiplayer remains unverified; probes invoke actual host/guest handlers with fake connections, not real transport.
+- [ ] Delta-install/remesh indexing intentionally deferred: changing replay/stream correctness was not a safe quick win. Current full-delta scans remain.
+
+Compatibility/continuity decisions (vetoable): old v1 saves are not migrated and safely Wake fresh. Continue local world uses only a validated local pair; guest saves never overwrite that pair. Unanswered placements remain conservatively deducted on going alone until host rejoin reconciles their authoritative balance, rather than refunding an edit that may already exist. This can temporarily withhold material offline. At most 256 unacknowledged tool craft receipts queue; acknowledged lifetime crafts have no 1024 cap.
+
+Microbenchmarks, not FPS: 100k HUD stamps 73.7ms old JSON vs 7.1ms revision; representative 10k-delta/1k-crop envelope 455,324 characters serialized in 1.2ms. Placement dirties 1/2/4 chunks interior/edge/corner vs up to 9; 10k writes at one delta coordinate retain one entry. Synchronous serialization remains and exposes lastSerialization timing. No claim of serializer speedup.
+
 ## Started
 
 - Gamebible sections 01–17 — 100%.
