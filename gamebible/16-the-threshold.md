@@ -76,3 +76,23 @@ The shared-dawn call is vetoable: the first valid host-approved ritual lights th
 
 
 Stage Seven interface layout: the session code, Mic on / Mic muted and Hear voices controls share one tidy vertical matte cluster immediately left of the top-right minimap. Hidden in solo. The inventory uses auto-fit columns with 68px minimum slot widths and 8px gaps (four columns at its normal 340px inner width), quiet item labels and hover names, and rows added as the material set grows. Journal behavior above is unchanged; only its corner and scrollbar styling change. Firefox uses thin and #99857c on #292938; WebKit uses a 7px rounded track/thumb, 2px track-colored border, #c4ad99 hover.
+
+## Stage Eight revision: the lesson beyond — Relic, November 22, 2026
+
+Relic moved crafting OUT of the island. The threshold stays hands, gathering, fire, dawn, naming and one-way crossing; C cannot open crafting there. No loose stones remain. Sparkstone is hand-gathered from the existing six seams at 1.5 seconds, dryfiber remains available from hand-gathered grass, and mist-catch remains movement recovery. The first fire still asks exactly three sparkstone and five dryfiber, then releases the ninety-second dawn. Existing dialogue, ritual and bridge logic are untouched.
+
+Shortly after arriving in the waking meadow, when the guide is free to speak, it teaches:
+
+> The island gave freely. Beyond the bridge, some things ask for more than hands. Let me show you how to make what you'll need.
+
+The guide waits for a real recipe completion, not a C key press, then acknowledges:
+
+> There. Made by your own hands now. The world will notice.
+
+If the player has already crafted, this lesson skips gracefully. A small control follow-up says: "Hold a tree to gather wood. Three pieces become a wooden tool. Press C to shape one." This follow-up wording is **vetoable**; the teach and acknowledgement above are Relic's approved lines, used verbatim.
+
+Once-only stone feedback, also verbatim:
+
+> Stone won't yield to hands alone. It asks for an edge.
+
+The arrival is (0.5, waking surface + 1, 0.5) with seed 73021. A deterministic existing tree stands at (-5,-22), about 22.6 metres from the origin: reasonable walking reach, so no terrain or tree-placement adjustment was necessary. A fresh-arrival probe hand-chopped three trunk blocks, crafted a wooden pickaxe with the resulting three wood, then mined stone. Tools do not gate the threshold.
