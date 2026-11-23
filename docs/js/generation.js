@@ -36,3 +36,28 @@ export function generate(cx,cz,seed){
  for(let z=0;z<SIZE;z++)for(let x=0;x<SIZE;x++){let sun=15;for(let y=HEIGHT-1;y>=0;y--){const i=index(x,y,z),b=voxelAt(cx*SIZE+x,y,cz*SIZE+z,seed);blocks[i]=b;if(b)sun=0;light[i]=sun;}}
  return {cx,cz,blocks,light};
 }
+
+// Stage four placeholder: canon leaves the full biome table open.
+export const DEFAULT_SEED=73021;
+const smooth=t=>t*t*(3-2*t);
+function noise(x,z,seed,scale){
+ const a=Math.floor(x/scale),b=Math.floor(z/scale),u=smooth(x/scale-a),v=smooth(z/scale-b);
+ const n=(i,j)=>hash(i,j,seed);
+ return (n(a,b)*(1-u)+n(a+1,b)*u)*(1-v)+(n(a,b+1)*(1-u)+n(a+1,b+1)*u)*v;
+}
+export function wakingHeight(x,z,seed=DEFAULT_SEED){
+ return 34+Math.floor(noise(x,z,seed,96)*12+noise(x,z,seed+1,32)*4);
+}
+export function wakingVoxel(x,y,z,seed=DEFAULT_SEED){
+ if(y<0||y>=HEIGHT)return 0;
+ const h=wakingHeight(x,z,seed);
+ if(y<2)return FOUNDATION_STONE;
+ if(y<=h)return y===h?1:(Math.floor(y/4)%2?2:3);
+ if(y===h+1&&hash(x,z,seed+7)>.985)return hash(x,z,seed+8)>.5?7:8;
+ return 0;
+}
+export function generateWaking(cx,cz,seed=DEFAULT_SEED){
+ const blocks=new Uint8Array(SIZE*SIZE*HEIGHT),light=new Uint8Array(blocks.length);
+ for(let z=0;z<SIZE;z++)for(let x=0;x<SIZE;x++){let sun=15;for(let y=HEIGHT-1;y>=0;y--){const i=index(x,y,z),b=wakingVoxel(cx*SIZE+x,y,cz*SIZE+z,seed);blocks[i]=b;if(b)sun=0;light[i]=sun;}}
+ return {cx,cz,blocks,light,waking:true};
+}
