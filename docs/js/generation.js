@@ -37,27 +37,58 @@ export function generate(cx,cz,seed){
  return {cx,cz,blocks,light};
 }
 
-// Stage four placeholder: canon leaves the full biome table open.
+// Waking world: five biomes decided by Relic, November 22, 2026.
 export const DEFAULT_SEED=73021;
+export const BIOMES=['Meadow','Forest','Canyon and River Lands','Frost Peaks','Desert'];
 const smooth=t=>t*t*(3-2*t);
 function noise(x,z,seed,scale){
- const a=Math.floor(x/scale),b=Math.floor(z/scale),u=smooth(x/scale-a),v=smooth(z/scale-b);
- const n=(i,j)=>hash(i,j,seed);
+ const a=Math.floor(x/scale),b=Math.floor(z/scale),u=smooth(x/scale-a),v=smooth(z/scale-b),n=(i,j)=>hash(i,j,seed);
  return (n(a,b)*(1-u)+n(a+1,b)*u)*(1-v)+(n(a,b+1)*(1-u)+n(a+1,b+1)*u)*v;
 }
-export function wakingHeight(x,z,seed=DEFAULT_SEED){
- return 34+Math.floor(noise(x,z,seed,96)*12+noise(x,z,seed+1,32)*4);
+export function biomeWeights(x,z,seed=DEFAULT_SEED){
+ const a=Math.floor(x/192),b=Math.floor(z/192),u=smooth(x/192-a),v=smooth(z/192-b),w=[0,0,0,0,0];
+ for(let dz=0;dz<2;dz++)for(let dx=0;dx<2;dx++){const i=a+dx,j=b+dz,id=i===0&&j===0?0:Math.min(4,Math.floor(hash(i,j,seed+91)*5));w[id]+=(dx?u:1-u)*(dz?v:1-v);}
+ return w;
+}
+export function biomeAt(x,z,seed=DEFAULT_SEED){const w=biomeWeights(x,z,seed);return BIOMES[w.indexOf(Math.max(...w))];}
+export function riverDistance(x,z,seed=DEFAULT_SEED){return Math.abs(z-(Math.sin(x/73+seed)*30+Math.sin(x/181)*48));}
+function profile(x,z,seed){
+ const w=biomeWeights(x,z,seed),n=noise(x,z,seed,64),b=noise(x,z,seed+1,32),r=riverDistance(x,z,seed);
+ const channel=1-smooth(Math.min(1,r/14));
+ const heights=[37+n*8,39+n*10,39+noise(x,z,seed+2,96)*15-channel*13,51+noise(x,z,seed+3,96)*25+b*7,36+n*8+(Math.sin(x/19+noise(x,z,seed,96)*5)+1)*2];
+ const h=Math.floor(heights.reduce((sum,y,i)=>sum+y*w[i],0));
+ let pick=hash(x,z,seed+5),type=4;for(let i=0;i<5;i++){pick-=w[i];if(pick<=0){type=i;break;}}
+ const surface=[1,11,r<10?13:12,14,15][type];
+ return {h,w,type,surface};
+}
+export function wakingHeight(x,z,seed=DEFAULT_SEED){return profile(x,z,seed).h;}
+// Column work is shared by generation and meshing, never dependent on visit order.
+const columns=new Map();
+function column(x,z,seed){
+ const key=x+','+z+','+seed;if(columns.has(key))return columns.get(key);
+ const p=profile(x,z,seed),extra=[];
+ const chance=hash(x,z,seed+7);
+ if(chance<.004*p.w[0])p.surface=10;
+ if(chance>.97&&chance<.97+.025*p.w[0])extra.push([p.h+1,16]);
+ if(chance>.91&&chance<.91+.075*p.w[1]+.012*p.w[0]+.002*p.w[3]+.001*p.w[4])extra.push([p.h+1,hash(x,z,seed+8)>.5?7:8]);
+ const ax=Math.floor(x/12),az=Math.floor(z/12);
+ for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
+  const a=ax+dx,b=az+dz,tx=a*12+2+Math.floor(hash(a,b,seed+20)*8),tz=b*12+2+Math.floor(hash(a,b,seed+21)*8);
+  const xx=x-tx,zz=z-tz;if(Math.abs(xx)>3||Math.abs(zz)>3)continue;
+  const q=profile(tx,tz,seed);if(hash(a,b,seed+22)>.90*q.w[1]+.10*q.w[0])continue;
+  if(!xx&&!zz)for(let y=q.h+1;y<=q.h+5;y++)extra.push([y,5]);
+  for(let y=q.h+4;y<=q.h+8;y++)if(xx*xx+zz*zz+(y-q.h-6)**2<10)extra.push([y,6]);
+ }
+ const c={...p,extra};if(columns.size>=8192)columns.clear();columns.set(key,c);return c;
 }
 export function wakingVoxel(x,y,z,seed=DEFAULT_SEED){
- if(y<0||y>=HEIGHT)return 0;
- const h=wakingHeight(x,z,seed);
+ if(y<0||y>=HEIGHT)return 0;const p=column(x,z,seed);
  if(y<2)return FOUNDATION_STONE;
- if(y<=h)return y===h?1:(Math.floor(y/4)%2?2:3);
- if(y===h+1&&hash(x,z,seed+7)>.985)return hash(x,z,seed+8)>.5?7:8;
- return 0;
+ if(y<=p.h){if(y===p.h)return p.surface;if(p.type===3&&y>p.h-4)return 13;if(p.type===4&&y>p.h-3)return 15;return Math.floor(y/4)%2?2:3;}
+ for(const [yy,id] of p.extra)if(y===yy)return id;return 0;
 }
 export function generateWaking(cx,cz,seed=DEFAULT_SEED){
  const blocks=new Uint8Array(SIZE*SIZE*HEIGHT),light=new Uint8Array(blocks.length);
- for(let z=0;z<SIZE;z++)for(let x=0;x<SIZE;x++){let sun=15;for(let y=HEIGHT-1;y>=0;y--){const i=index(x,y,z),b=wakingVoxel(cx*SIZE+x,y,cz*SIZE+z,seed);blocks[i]=b;if(b)sun=0;light[i]=sun;}}
+ for(let z=0;z<SIZE;z++)for(let x=0;x<SIZE;x++){const wx=cx*SIZE+x,wz=cz*SIZE+z;column(wx,wz,seed);let sun=15;for(let y=HEIGHT-1;y>=0;y--){const i=index(x,y,z),b=wakingVoxel(wx,y,wz,seed);blocks[i]=b;if(b)sun=0;light[i]=sun;}}
  return {cx,cz,blocks,light,waking:true};
 }
