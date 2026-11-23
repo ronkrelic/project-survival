@@ -362,7 +362,7 @@ const voiceRequest=voice.request.bind(voice);voice.request=async function(){cons
 setInterval(()=>{if(net.mode==='host'){for(const c of net.links.values()){const state=c.peerConnection?.connectionState;if(state==='failed'||state==='closed'){c.close();continue;}if(!c.psName){c.psWaiting=(c.psWaiting||0)+1;if(c.psWaiting>=20)c.close();}}}else if(net.mode==='guest'&&net.host){const state=net.host.peerConnection?.connectionState;if(state==='failed'||state==='closed')net.host.close();}},1000);
 
 // Stage Eight — Relic, 2026-11-22. Context tools; no equipment or durability.
-const recipes=[{result:'wooden pickaxe',cost:{wood:3}},{result:'wooden axe',cost:{wood:3}},{result:'wooden shovel',cost:{wood:3}},{result:'wooden hoe',cost:{wood:3}}];
+const recipes=[{result:'lantern',cost:{'hearthglow ore':1,wood:2}},{result:'wooden pickaxe',cost:{wood:3}},{result:'wooden axe',cost:{wood:3}},{result:'wooden shovel',cost:{wood:3}},{result:'wooden hoe',cost:{wood:3}}];
 const craftHistory=[];let craftedCount=0,craftBase=0;
 const crafting=document.createElement('section');crafting.id='crafting';crafting.hidden=true;crafting.setAttribute('aria-label','Make by hand');crafting.style.cssText='position:fixed;z-index:25;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,85vw);max-height:75vh;overflow:auto;padding:24px;background:#292938f5;color:#ead9c7;border:1px solid #99857c;border-radius:18px;font:16px Georgia,serif';document.body.append(crafting);
 function canCraft(r){return (!r.hearth||nearLitHearth())&&Object.entries(r.cost).every(([k,n])=>(player.materials[k]||0)>=n);}
@@ -495,7 +495,7 @@ const bounded=(n,min,max)=>Number.isFinite(n)&&n>=min&&n<=max;
 const record=o=>o!==null&&typeof o==='object'&&!Array.isArray(o);
 const shortText=s=>typeof s==='string'&&s.length<=80;
 const uuid=s=>typeof s==='string'&&/^[a-f0-9-]{36}$/.test(s);
-const itemNames=new Set(['earth','stone','wood','leaf bits','dryfiber','sparkstone','teal flora bits','violet flora bits','sand','snow','echostone','hearthglow ore','sunmeadow grain','sunmeadow seeds','hearth bread','sunseed cakes',...['wooden','stone'].flatMap(t=>['axe','hoe','pickaxe','shovel'].map(k=>t+' '+k))]);
+const itemNames=new Set(['lantern','earth','stone','wood','leaf bits','dryfiber','sparkstone','teal flora bits','violet flora bits','sand','snow','echostone','hearthglow ore','sunmeadow grain','sunmeadow seeds','hearth bread','sunseed cakes',...['wooden','stone'].flatMap(t=>['axe','hoe','pickaxe','shovel'].map(k=>t+' '+k))]);
 function validBag(b){return record(b)&&Object.keys(b).length<=itemNames.size&&Object.entries(b).every(([k,n])=>itemNames.has(k)&&Number.isSafeInteger(n)&&bounded(n,0,1e9));}
 const coordinate=p=>record(p)&&[p.x,p.z].every(n=>Number.isInteger(n)&&bounded(n,-100000,100000))&&Number.isInteger(p.y)&&bounded(p.y,0,111);
 const limited=a=>Array.isArray(a)&&a.length<=100000;
