@@ -57,7 +57,7 @@ guide.updateLessons=function(){
  else if(l.stage==='jump'&&!this.active&&!this.queue.length&&this.cooldown===0)this.say('jump-teach',"The island climbs in steps. When a step is too tall, press space and rise to meet it.");
  if(l.stage==='jump-ack'&&this.completed.has('jump-ack'))l.stage='sprint';
  if(l.stage==='sprint'&&player.didSprint){this.say('sprint-ack',"The wind noticed you.");this.delight=3;l.stage='sprint-ack';}
- else if(l.stage==='sprint'&&!this.active&&!this.queue.length&&this.cooldown===0)this.say('sprint-teach',"If you're eager, hold shift and run. It spends your strength; walk a while and it comes back.");
+ else if(l.stage==='sprint'&&!this.active&&!this.queue.length&&this.cooldown===0)this.say('sprint-teach',"If you're eager, hold shift and run. It spends your stamina; walk a while and it comes back.");
  if(l.stage==='sprint-ack'&&this.completed.has('sprint-ack')){l.done=true;for(const [id,text] of l.deferred)this.say(id,text);l.deferred.clear();}
 };
 guide.update=function(dt){
