@@ -103,7 +103,7 @@ export class Player {
     this.vy=Math.max(-30,this.vy-18*dt/n);
     const next=this.y+this.vy*dt/n;
     if(this.clear(this.x,next,this.z)){this.y=next;this.grounded=false;}
-    else {const falling=this.vy<=0;this.y=falling?Math.ceil(next-.001):Math.floor(this.y+1.799)-1.8;this.vy=0;this.grounded=falling;}
+    else {const falling=this.vy<=0;this.y=falling?Math.ceil(next-.001):Math.floor(next+1.799)-1.8;this.vy=0;this.grounded=falling;}
    }
   }
   // Damped camera absorbs step-ups and landings; collision body stays exact.
