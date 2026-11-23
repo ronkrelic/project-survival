@@ -193,7 +193,7 @@ mining.tally.style.cssText='max-width:240px;line-height:1.7;color:#e0d4c5;opacit
 const plate=document.createElement('div');plate.id='guide-nameplate';plate.textContent='Ember';plate.style.cssText='position:fixed;left:0;top:0;z-index:9;display:none;pointer-events:none;color:#f3cbb7;font:13px Georgia,serif;letter-spacing:.04em;text-shadow:0 1px 8px #352533;transform:translate(-50%,-100%)';document.body.append(plate);
 guide.name='Ember';
 const atlas={island:new Map(),waking:new Map(),clock:1};
-const mapColors={1:'#789e8b',2:'#ac876e',3:'#ab8182',4:'#777688',5:'#927866',6:'#87a08a',7:'#8abbb2',8:'#b2a0bb',9:'#8c7378',10:'#d5d1b0'};
+const mapColors={1:'#789e8b',2:'#ac876e',3:'#ab8182',4:'#777688',5:'#927866',6:'#87a08a',7:'#8abbb2',8:'#b2a0bb',9:'#8c7378',10:'#d5d1b0',11:'#527f72',12:'#b87868',13:'#c1c5be',14:'#dce4e3',15:'#c7a16a',16:'#97aa83'};
 function updateHUD(dt){
  hud.style.display=session.started?'flex':'none';
  plate.textContent=guide.name||'Ember';
