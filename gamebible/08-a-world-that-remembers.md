@@ -60,3 +60,13 @@ This section supersedes the earlier inert-health/hunger and carried-but-not-eate
 **Vetoable implementation tuning:** hunger/health 0–100; hunger drains 1 per 15 play-seconds (25 minutes full to empty), starvation costs 1 health per 5 seconds. Grain restores 25 hunger. Health regenerates 1 per 5 seconds at hunger **90 or above** (a proposed nourished zone, not Relic’s literal full-only wording). Low warning at 25 or below, re-armed only by eating to at least 40. Fainting lasts four seconds with a soft dark fade; revival restores hunger 30 and health 20. To make “20 and climbing” real, guide-fed care grants 25 seconds of recovery at 1 health/5 seconds even below 90 (up to 5 extra health); it does not stack with nourished regeneration. This temporary feeding-care exception is vetoable. No offline catch-up; active session time only. Stamina is unchanged.
 
 Health is only a nourishment story in this stage: no foes, fall damage, death, durability, cooking, drinks, new food, saving or terrain/movement/sky changes. The island threshold runs no nourishment clock at all; it cannot starve or faint a traveler.
+
+
+## Stage Ten — The settling-in update
+
+Designed by Relic · November 23, 2026. Implemented proposals below remain vetoable by Relic; they are not prior approved dialogue.
+
+### Making a home
+Waking-world right-click places the selected carried earth, sand, snow, stone, echostone or wood against the aimed face; left hold remains mining. Button choice is vetoable. Empty cells only, never intersecting a player. One material is spent only on accepted placement. Host validates guest balance through the existing yield/receipt ledger before applying deltas. No island placement.
+The waking day lasts 840 seconds (14 minutes), with 600 seconds of daylight and 240 of soft night, vetoable tuning. Dawn, daylight, dusk, stars and aurora provide rhythm without danger; minimum phase light is 0.26, never full black. Hearth glow strengthens at night. Clock under the minimap reads, for example, Day 2 · 06:00 · Dawn (vetoable format). World clock and day count persist; no offline catch-up. No new first-dusk guide line was added.
+World deltas, tilling and local crop ages persist with the world. Crop stages remain 0/60/120/180 seconds; harvest remains one grain and two seeds. Multiplayer crops are still local-only, explicitly unfinished shared-world work. Island keeps its authored dawn, unchanged ritual, dialogue and bare-handed completion.
