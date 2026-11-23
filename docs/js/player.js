@@ -73,7 +73,7 @@ export class Player {
  update(dt) {
   const locked=document.pointerLockElement===this.canvas;
   if(this.awake)this.wake=Math.min(1,this.wake+dt/2);
-  if(this.world.loaded&&!this.mistCatch&&(this.y<0||Math.abs(this.x)>=128||Math.abs(this.z)>=(this.realmLimit||128)||(!this.grounded&&!this.hasGround(this.x,this.z))))this.catchMist();
+  if(this.world.loaded&&!this.mistCatch&&(this.y<0||(!this.world.waking&&(Math.abs(this.x)>=128||Math.abs(this.z)>=(this.realmLimit||128)))||(!this.grounded&&!this.hasGround(this.x,this.z))))this.catchMist();
   if(this.mistCatch)this.updateMist(dt);
   else if(locked&&this.wake===1){
    let f=Number(this.keys.has('KeyW'))-Number(this.keys.has('KeyS'));
