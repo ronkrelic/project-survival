@@ -248,3 +248,15 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/10
 requestAnimationFrame(frame);
 // Read-only inspection seam for desktop smoke tests; never displayed in-world.
 window.grin={session,seed,player,world,renderer,scene,camera,mining,attention,guide,phase,sky,ritual,hearth,aurora,updateRitual,updateSky,crossing,bridge,shore,updateCrossing,acceptGuideName,atlas,updateHUD};
+
+// Stage Six: a read-only, session inventory. The island keeps breathing.
+const inventory=document.createElement('section');inventory.id='inventory';inventory.className='soft-panel';inventory.hidden=true;
+inventory.setAttribute('aria-label','Gathered materials');inventory.style.cssText='position:fixed;z-index:22;left:50%;top:50%;transform:translate(-50%,-50%);width:min(340px,85vw);padding:24px;color:#ead9c7;background:#292938f2;border:1px solid #99857c;border-radius:18px;font:16px Georgia,serif';
+const inventoryTitle=document.createElement('h2');inventoryTitle.textContent='Gathered along the way';inventoryTitle.style.fontSize='20px';
+const inventoryRows=document.createElement('div'),inventoryHint=document.createElement('p');inventoryHint.textContent='I or Esc to close · the world keeps moving';inventoryHint.style.fontSize='12px';inventory.append(inventoryTitle,inventoryRows,inventoryHint);document.body.append(inventory);
+const swatches={earth:'#83a68c',stone:'#b78e72',wood:'#927866',dryfiber:'#c8b58b',sparkstone:'#d9ac78','teal flora bits':'#8abbb2','violet flora bits':'#b2a0bb',sand:'#c7a16a'};
+let inventoryStamp='';
+function refreshInventory(){const stamp=JSON.stringify(player.materials);if(stamp===inventoryStamp)return;inventoryStamp=stamp;inventoryRows.replaceChildren();for(const [name,count] of Object.entries(player.materials)){const row=document.createElement('div'),swatch=document.createElement('span');row.style.cssText='display:flex;gap:12px;align-items:center;padding:7px 0';swatch.style.cssText='width:18px;height:18px;border-radius:5px;background:'+(swatches[name]||'#b5a3a0');row.append(swatch,document.createTextNode(name+' · '+count));inventoryRows.append(row);}if(!inventoryRows.childNodes.length)inventoryRows.textContent='Nothing gathered yet.';}
+addEventListener('keydown',e=>{if(!session.started||e.target.matches?.('input,textarea,[contenteditable="true"]'))return;if(e.code==='KeyI'&&!e.repeat){e.preventDefault();inventory.hidden=!inventory.hidden;refreshInventory();}else if(e.code==='Escape')inventory.hidden=true;});
+setInterval(()=>{if(!inventory.hidden)refreshInventory();},150);
+window.grin.inventory={panel:inventory,refresh:refreshInventory};
