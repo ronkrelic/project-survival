@@ -10,7 +10,7 @@ export function targetBlock(world,origin,direction,reach=5){
   const a=next.indexOf(Math.min(...next));distance=next[a];p[a]+=step[a];next[a]+=delta[a];
  }return null;
 }
-export function requiredTool(id){return [1,11,14,15,17].includes(id)?'wooden shovel':[5,6].includes(id)?'wooden axe':[2,3,12,13].includes(id)?'wooden pickaxe':null;}
+export function requiredTool(id){return [1,11,14,15,17,19].includes(id)?'wooden shovel':[5,6].includes(id)?'wooden axe':[2,3,12,13].includes(id)?'wooden pickaxe':null;}
 export function miningSeconds(id,bag={},selected=null){const base=materials[id]?.seconds??Infinity,tool=requiredTool(id);if(id===18)return selected==='stone pickaxe'&&bag[selected]>0?base/1.5:Infinity;const matches=tool&&bag[selected]>0&&(selected===tool||selected===tool.replace('wooden ','stone '));return tool&&!matches?(tool==='wooden pickaxe'?Infinity:base*3):base/(matches&&selected.startsWith('stone ')?1.5:1);}
 export class Mining{
  constructor(scene,camera,world,player,canvas){
@@ -47,10 +47,10 @@ export class Mining{
    if(this.held&&active){
     if(Number.isFinite(seconds))this.elapsed+=dt;else {this.elapsed=0;if(requiredTool(t.id)==='wooden pickaxe')window.grin?.guide.say('stone-edge',"Stone won't yield to hands alone. It asks for an edge.");}
     if(breakable(t.id)&&Number.isFinite(seconds)){
-     const progress=Math.min(1,this.elapsed/seconds);
-     this.glow.material.opacity=.03+.14*progress;this.outline.material.opacity=.28+.2*progress;
-     if(Math.floor(this.clock*14)!==Math.floor((this.clock-dt)*14))this.mote(t);
-     if(this.elapsed>=seconds){const removed=this.world.remove(t.x,t.y,t.z);if(removed){const name=materials[removed].yield;this.player.materials[name]=(this.player.materials[name]||0)+1;if(removed===1)this.player.materials.dryfiber=(this.player.materials.dryfiber||0)+1;for(let i=0;i<14;i++)this.mote(t,true);}this.elapsed=0;this.target=null;}
+     const progress=Math.min(1,this.elapsed/seconds),speed=(materials[t.id].seconds*3)/seconds;this.feedbackSpeed=speed;this.feedbackTier=this.world.waking&&this.player.materials[this.player.selectedTool]>0?(this.player.selectedTool?.startsWith("stone ")?"stone":"wood"):"hands";
+     this.glow.material.opacity=.03+.12*progress+.015*(1+Math.sin(this.elapsed*5*speed));this.outline.material.opacity=.28+.2*progress;
+     if(Math.floor(this.clock*(5*speed))!==Math.floor((this.clock-dt)*(5*speed)))this.mote(t);
+     if(this.elapsed>=seconds){const removed=this.world.remove(t.x,t.y,t.z);if(removed){window.grin?.sound?.play('mining-complete:'+this.feedbackTier,this.feedbackTier==='stone'?440:this.feedbackTier==='wood'?360:300,.22,.045);const name=materials[removed].yield;this.player.materials[name]=(this.player.materials[name]||0)+1;if(removed===1)this.player.materials.dryfiber=(this.player.materials.dryfiber||0)+1;for(let i=0;i<14;i++)this.mote(t,true);}this.elapsed=0;this.target=null;}
     }else{this.glow.material.opacity=.045+.02*Math.sin(this.clock*5);hum=.018;}
    }else{this.glow.material.opacity=.018;this.outline.material.opacity=.28;}
   }else this.elapsed=0;
