@@ -103,3 +103,12 @@ The arrival is (0.5, waking surface + 1, 0.5) with seed 73021. A deterministic e
 This section supersedes the earlier inert-health/hunger and carried-but-not-eaten Stage Five/Eight notes. Relic’s design: hunger drains slowly; empty hunger costs health; zero health means fainting, NEVER death. The guide feeds the traveler, who wakes where they fell with inventory, tools and position intact. No drops or penalties beyond lost time. All nourishment and the guide are strictly per-player LOCAL state. No multiplayer message types or protocol changes; host validation and ordered craft receipts stay as before.
 
 The island provides freely: hunger does not drain there, starvation cannot damage health there, and fainting cannot begin there, even with empty hunger. Nourishment begins only after the crossing into the waking world. The complete bare-handed sparkstone → dryfiber → fire → dawn → bridge → naming arc stays unchanged. No ritual, dialogue, terrain, sky or movement changes. This is the safe threshold, never a death trap.
+
+
+## Stage Ten — The settling-in update
+
+Designed by Relic · November 23, 2026. Implemented proposals below remain vetoable by Relic; they are not prior approved dialogue.
+
+### Threshold boundary
+The threshold retains its authored dawn and existing ritual/dialogue. No hunger, death, placing, cooking or day/night cycle on the island. Bare hands must still complete gathering and the 3-sparkstone/5-dryfiber, two-second hold ritual, 90-second dawn, bridge and naming arc. No new guide lines were introduced in Stage Ten.
+Vetoable persistence simplicity: do not save an island run in progress. An uncrossed player Wakes fresh; crossing and naming are save milestones, as are dawn and revival. Continue resumes crossed state; position restoration is solo-only. Begin anew requires confirmation and clears personal plus local world saves. Shared guest crops remain local-only. Stage Ten selection supersedes context auto-apply in the waking world without requiring a tool to complete the island.
