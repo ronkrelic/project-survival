@@ -1,6 +1,6 @@
-// Append-only future world edits. Co-op later = seed + deltas.
+// Latest edit per voxel coordinate; bounded by distinct edited cells.
 // Record: {position:{x,y,z}, block:integerId, action:'place'|'remove'}.
-// Mining appends removals; session-only, with no persistence or networking.
+// World save/network replay own realm persistence; this compact log supports local edits.
 const log=new Map();
 export function appendDelta(position,block,action) {
  if(!['place','remove'].includes(action)||!Number.isInteger(block)||!['x','y','z'].every(k=>Number.isInteger(position[k])))throw new TypeError('Invalid voxel delta');
