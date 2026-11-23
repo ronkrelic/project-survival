@@ -29,9 +29,10 @@ export function mesh(chunk,seed) {
     const ao=s1&&s2?.68:1-.10*(Number(s1)+Number(s2)+Number(co));
     return f.shade*ao*tint*(.82+.18*light[i]/15);
    });
+   if(id===17&&ny===1){for(let row=0;row<6;row++){const a=row/6,b=(row+1)/6,vs=[[0,1,b],[1,1,b],[1,1,a],[0,1,a]];for(const k of [0,1,2,0,2,3]){const v=vs[k];positions.push(x+v[0]+cx*SIZE,y+1,z+v[2]+cz*SIZE);for(const c of palette[id])colors.push(c*shades[k]*(row%2?.76:1.12));}}continue;}
    for(const k of [0,1,2,0,2,3]) {
     const v=f.v[k];positions.push(x+v[0]+cx*SIZE,y+v[1],z+v[2]+cz*SIZE);
-    for(const c of palette[id])colors.push(c*shades[k]*(id===17&&ny===1?(z%2?.82:1.12):1));
+    for(const c of palette[id])colors.push(c*shades[k]);
    }
   }
  }
