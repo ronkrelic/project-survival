@@ -13,7 +13,6 @@ addEventListener('keydown',e=>{
  if(e.code==='Escape'){e.preventDefault();closeSettings();}
 },true);
 const query=new URLSearchParams(location.search).get('seed');
-END REPLACE
 
 const requestedSeed=query!==null&&/^-?\d+$/.test(query)?Number(query)|0:73021;
 const seed=73021; // Handmade layout and decoration ignore requestedSeed.
@@ -146,7 +145,7 @@ const glints=[];for(const [x,z] of sparkNodes){const g=new THREE.Mesh(new THREE.
 const aurora=new THREE.Group();aurora.position.set(12,87,-62);scene.add(aurora);
 for(let i=0;i<3;i++){const geo=new THREE.PlaneGeometry(44,23,24,10),mat=new THREE.MeshBasicMaterial({color:i%2?0xad91cb:0x81c6bc,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false,fog:false});const ribbon=new THREE.Mesh(geo,mat);ribbon.rotation.y=i*Math.PI/3;ribbon.position.y=i*7;aurora.add(ribbon);}
 
-function startCrackle(){try{const audio=mining.audio||new (window.AudioContext||window.webkitAudioContext)();audio.resume().catch(()=>{});const buffer=audio.createBuffer(1,audio.sampleRate*3,audio.sampleRate),data=buffer.getChannelData(0);let low=0;for(let i=0;i<data.length;i++){low=low*.985+(Math.random()*2-1)*.015;data[i]=low*2+(Math.random()<.0005?(Math.random()-.5)*.4:0);}const noise=audio.createBufferSource(),filter=audio.createBiquadFilter(),gain=audio.createGain();noise.buffer=buffer;noise.loop=true;filter.type='lowpass';filter.frequency.value=900;gain.gain.value=.055;noise.connect(filter).connect(gain).connect(audio.destination);noise.start();ritual.crackle={audio,noise,gain};}catch{}}
+function startCrackle(){try{sound.unlock();const audio=sound.context;if(!audio)return;audio.resume().catch(()=>{});const buffer=audio.createBuffer(1,audio.sampleRate*3,audio.sampleRate),data=buffer.getChannelData(0);let low=0;for(let i=0;i<data.length;i++){low=low*.985+(Math.random()*2-1)*.015;data[i]=low*2+(Math.random()<.0005?(Math.random()-.5)*.4:0);}const noise=audio.createBufferSource(),filter=audio.createBiquadFilter(),gain=audio.createGain();noise.buffer=buffer;noise.loop=true;filter.type='lowpass';filter.frequency.value=900;gain.gain.value=.055;noise.connect(filter).connect(gain).connect(sound.sfx);noise.start();ritual.crackle={audio,noise,gain};}catch{}}
 
 function updateRitual(dt){if(world.waking)return;ritual.clock+=dt;const near=Math.hypot(player.x-ritual.x,player.z-ritual.z)<5;
  if(player.awake&&player.wake===1&&!ritual.lit){if(near)guide.say('cold-circle',"It's cold here yet. Stone that sparks, grass that burns. Bring me some of each.");if(ritual.enough())guide.say('enough-fire',"That's enough. Bring it to the stone circle.");}
@@ -555,8 +554,9 @@ this.music=a.createGain();this.music.gain.value=settings.music;
 this.music.connect(this.master);
 const buffer=a.createBuffer(1,a.sampleRate*2,a.sampleRate),d=buffer.getChannelData(0);let n=0;for(let i=0;i<d.length;i++){n=n*.97+(Math.random()*2-1)*.03;d[i]=n;}const loop=(frequency)=>{const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();s.buffer=buffer;s.loop=true;f.type='lowpass';f.frequency.value=frequency;g.gain.value=0;s.connect(f).connect(g).connect(this.sfx);
 s.start();return {source:s,filter:f,gain:g};};this.wind=loop(400);this.fire=loop(1400);}this.context.resume().catch(()=>{});}catch{}},
- play(kind,freq=260,duration=.12,volume=.08){if(this.muted||!this.context||this.context.state!=='running')return false;this.events[kind]=(this.events[kind]||0)+1;try{const a=this.context,o=a.createOscillator(),g=a.createGain();o.type=kind.startsWith('mine')?'triangle':'sine';o.frequency.setValueAtTime(freq,a.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(30,freq*.65),a.currentTime+duration);g.gain.setValueAtTime(volume,a.currentTime);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+duration);o.connect(g).connect(this.master);o.start();o.stop(a.currentTime+duration+.02);return true;}catch{return false;}},
- mute(value=!this.muted){this.muted=!!value;try{localStorage.setItem('project-survival:muted',String(this.muted));}catch{}if(this.master)this.master.gain.value=this.muted?0:.45;if(this.muted){if(mining.gain)mining.gain.gain.value=0;if(ritual.crackle?.gain)ritual.crackle.gain.gain.value=0;}muteButton.textContent=this.muted?'Sound off':'Sound on';muteButton.setAttribute('aria-pressed',String(this.muted));},
+ play(kind,freq=260,duration=.12,volume=.08){if(this.muted||!this.context||this.context.state!=='running')return false;this.events[kind]=(this.events[kind]||0)+1;try{const a=this.context,o=a.createOscillator(),g=a.createGain();o.type=kind.startsWith('mine')?'triangle':'sine';o.frequency.setValueAtTime(freq,a.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(30,freq*.65),a.currentTime+duration);g.gain.setValueAtTime(volume,a.currentTime);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+duration);o.connect(g).connect(this.sfx);o.start();o.stop(a.currentTime+duration+.02);return true;}catch{return false;}},
+ mute(value=!this.muted){this.muted=!!value;try{localStorage.setItem('project-survival:muted',String(this.muted));}catch{}if(this.master)this.master.gain.value=this.muted?0:.45;// All game sounds now share the muted master.
+muteButton.textContent=this.muted?'Sound off':'Sound on';muteButton.setAttribute('aria-pressed',String(this.muted));},
  tick(dt){if(!this.context||!session.started)return;const a=this.context,biome=world.waking?biomeAt(player.x,player.z,seed):'Island';this.wind.filter.frequency.value=biome==='Forest'?240:biome==='Frost Peaks'?650:400;this.wind.gain.gain.setTargetAtTime(.035+Math.sin(performance.now()/11000)*.008,a.currentTime,.5);const h=world.waking?wakingHearth.position:hearth.position,near=ritual.lit?Math.max(0,1-Math.hypot(player.x-h.x,player.y-h.y,player.z-h.z)/12):0;this.fire.gain.gain.setTargetAtTime(near*.12,a.currentTime,.3);if(near>0&&Math.random()<dt*5)this.play('hearth',80+Math.random()*150,.04,.02*near);const moved=Math.hypot(player.x-this.last.x,player.z-this.last.z);this.last={x:player.x,z:player.z};if(moved<1&&player.grounded)this.step+=moved;if(this.step>.9){this.step=0;const id=world.block(Math.floor(player.x),Math.floor(player.y-.1),Math.floor(player.z));this.play('step:'+id,[2,3,12,13,18].includes(id)?190:id===5?115:75,.07,.05);}if(mining.held&&mining.elapsed>0){this.mine+=dt;if(this.mine>.42/Math.max(1,mining.feedbackSpeed||1)){this.mine=0;const id=mining.target?.id||0;const tier=mining.feedbackTier||'hands';this.play('mine:'+tier+':'+id,(tier==='stone'?220:tier==='wood'?160:110)*([2,3,12,13,18].includes(id)?1.2:1),tier==='stone'?.14:.09,tier==='stone'?.065:.045);}}else this.mine=0;if(guide.active!==this.lastLine){this.lastLine=guide.active;if(guide.active)this.play('guide',780,.35,.035);}if(nourishment.faintTime>0&&!this.lastFaint)this.play('faint',140,1,.06);if(nourishment.revivals>this.lastRevival)this.play('revival',520,.8,.05);this.lastFaint=nourishment.faintTime;this.lastRevival=nourishment.revivals;if(this.muted&&mining.gain)mining.gain.gain.value=0;}
 };
 const muteButton=document.createElement('button');muteButton.id='mute-sound';muteButton.textContent='Sound on';muteButton.title='Mute game sounds';muteButton.setAttribute('aria-pressed','false');muteButton.style.cssText='position:fixed;right:20px;top:234px;padding:7px 12px;color:#d8c9b8;background:#292938cc;border:1px solid #99857c55;border-radius:10px;font:12px Georgia;z-index:13';muteButton.onclick=()=>{sound.unlock();sound.mute();};document.body.append(muteButton);sound.mute(sound.muted);addEventListener('pointerdown',()=>sound.unlock(),{passive:true});addEventListener('keydown',e=>{if(!e.repeat)sound.unlock();});
@@ -629,4 +629,103 @@ const arcHost=hostMessage;hostMessage=function(c,m){if(m?.type==='fire-request'|
  a.firstFire=true;send(c,{type:'dawn'});send(c,{type:'arc-first-fire'});return;
  }return arcHost(c,m);};
 const arcGuest=guestMessage;guestMessage=function(m){if(m?.type==='arc-first-fire'){arcFor().firstFire=true;net.firePending=false;return;}if(m?.type==='arc-monolith'){if(arcFor().firstFire)arcFor().monolith=true;return;}return arcGuest(m);};
+// Batch Three - one small panel, no music source yet.
+const settingsStyle=document.createElement('style');
+settingsStyle.textContent=`
+#game-settings{position:fixed;z-index:26;left:50%;top:50%;
+transform:translate(-50%,-50%);box-sizing:border-box;
+width:min(360px,90vw);max-height:80vh;overflow:auto;padding:24px;
+background:#eadcc5f5;color:#514c49;border:2px solid #aa9475;
+border-radius:14px;box-shadow:0 8px 35px #302e3540;font:16px Georgia}
+#game-settings[hidden]{display:none}
+#game-settings h2{margin:0 0 18px;font-size:21px}
+#game-settings label{margin:16px 0 6px;color:#514c49}
+#game-settings input{width:100%;padding:0;accent-color:#97aa91}
+#game-settings p{font-size:13px;line-height:1.5}
+#game-settings button{padding:8px 18px;background:#d9c59b;
+color:#514c49;border:1px solid #aa9475;font:14px Georgia}
+`;document.head.append(settingsStyle);
+const settingsButton=document.createElement('button');
+settingsButton.id='open-settings';settingsButton.textContent='Settings';
+settingsButton.style.cssText=muteButton.style.cssText;
+settingsButton.style.right='126px';
+settingsButton.setAttribute('aria-controls','game-settings');
+settingsButton.setAttribute('aria-expanded','false');
+settingsPanel=document.createElement('section');
+settingsPanel.id='game-settings';settingsPanel.hidden=true;
+settingsPanel.setAttribute('role','dialog');
+settingsPanel.setAttribute('aria-modal','true');
+settingsPanel.setAttribute('aria-labelledby','settings-title');
+settingsPanel.innerHTML='<h2 id="settings-title">A little comfort</h2>';
+const settingsInputs={};
+for(const [key,label,min,max,step] of [
+ ['sfx','SFX volume',0,1,.01],['music','Music volume',0,1,.01],
+ ['sensitivity','Mouse sensitivity',.25,3,.05]]){
+ const row=document.createElement('label'),input=document.createElement('input');
+ const value=document.createElement('output');
+ input.type='range';input.id='setting-'+key;row.htmlFor=input.id;
+ input.min=min;input.max=max;input.step=step;input.value=settings[key];
+ row.append(label+' ',value);settingsPanel.append(row,input);
+ settingsInputs[key]={input,value};
+ input.oninput=()=>{
+  settings[key]=Number(input.value);applySettings();
+ };
+ input.onchange=()=>saveGame();
+}
+const musicNote=document.createElement('p');
+musicNote.textContent='Music is still resting. This slider saves its level, '
+ +'but makes no audible difference until a future music engine arrives.';
+const settingsClose=document.createElement('button');
+settingsClose.textContent='Close / Esc';settingsClose.onclick=closeSettings;
+settingsPanel.append(musicNote,settingsClose);
+document.body.append(settingsButton,settingsPanel);
+function applySettings(){
+ player.sensitivity=settings.sensitivity;
+ if(sound.sfx)sound.sfx.gain.value=settings.sfx;
+ if(sound.music)sound.music.gain.value=settings.music;
+ for(const [key,{input,value}] of Object.entries(settingsInputs)){
+  input.value=settings[key];value.textContent=key==='sensitivity'
+   ?settings[key].toFixed(2)+'x':Math.round(settings[key]*100)+'%';
+ }
+}
+function closeSettings(){
+ if(!settingsPanel||settingsPanel.hidden)return;
+ settingsPanel.hidden=true;settingsButton.setAttribute('aria-expanded','false');
+ saveGame();settingsButton.focus();
+ // Like crafting: leave lock released; click the world to resume looking.
+}
+settingsButton.onclick=()=>{
+ if(!settingsPanel.hidden){closeSettings();return;}
+ inventory.hidden=true;crafting.hidden=true;chatInput.hidden=true;chatInput.blur();
+ mining.cancel();player.keys.clear();player.jumpQueued=false;
+ document.exitPointerLock?.();settingsPanel.hidden=false;
+ settingsButton.setAttribute('aria-expanded','true');settingsInputs.sfx.input.focus();
+};
+settingsPanel.addEventListener('keydown',e=>{
+ if(e.code!=='Tab')return;
+ const first=settingsInputs.sfx.input,last=settingsClose;
+ if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+ else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+});
+// Block world clicks while this panel is open, without eating its controls.
+for(const type of ['mousedown','click'])addEventListener(type,e=>{
+ if(settingsPanel.hidden||settingsPanel.contains(e.target)
+  ||e.target===settingsButton||e.target===muteButton)return;
+ e.preventDefault();e.stopImmediatePropagation();
+},true);
+const settingsSnapshot=personalSnapshot;
+personalSnapshot=function(){return {...settingsSnapshot(),settings:{...settings}};};
+const settingsLoad=loadPersonal;
+loadPersonal=function(s,position=false){
+ const ok=settingsLoad(s,position);if(!ok)return false;
+ for(const key of ['sfx','music','sensitivity']){
+  const n=s.settings?.[key],min=key==='sensitivity'?.25:0;
+  const max=key==='sensitivity'?3:1;
+  settings[key]=typeof n==='number'&&Number.isFinite(n)
+   ?Math.max(min,Math.min(max,n)):1;
+ }
+ applySettings();return true;
+};
+window.grin.saving.personalSnapshot=personalSnapshot;
+applySettings();
 window.grin.arc={current:arcFor,players:islandArcs};window.grin.netValidation.receive=(c,m)=>hostMessage(c,m);window.grin.netValidation.guest=m=>guestMessage(m);
