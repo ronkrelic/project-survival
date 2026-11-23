@@ -206,8 +206,7 @@ const bars={};
 for(const [id,label] of [['health','Health'],['hunger','Hunger'],['stamina','Stamina']]){
  const row=document.createElement('div');row.className='vital';
  const caption=document.createElement('div');caption.className='vital-label';caption.textContent=label;
- if(id!=='stamina'){const note=document.createElement('small');note.textContent='not yet active';caption.append(note);}
- const track=document.createElement('div');track.className='vital-track';track.setAttribute('role','progressbar');track.setAttribute('aria-label',label+(id==='stamina'?'':' (placeholder; not yet active)'));track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax','100');track.setAttribute('aria-valuenow','100');
+ const track=document.createElement('div');track.className='vital-track';track.setAttribute('role','progressbar');track.setAttribute('aria-label',label);track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax','100');track.setAttribute('aria-valuenow','100');
  const fill=document.createElement('div');fill.id=id+'-fill';fill.className='vital-fill';track.append(fill);row.append(caption,track);playerBox.append(row);bars[id]={fill,track};
 }
 const guideBox=document.createElement('section');guideBox.id='guide-box';guideBox.className='soft-panel';guideBox.setAttribute('aria-label','Spirit guide');
@@ -221,6 +220,7 @@ const atlas={island:new Map(),waking:new Map(),clock:1};
 const mapColors={1:'#789e8b',2:'#ac876e',3:'#ab8182',4:'#777688',5:'#927866',6:'#87a08a',7:'#8abbb2',8:'#b2a0bb',9:'#8c7378',10:'#d5d1b0',11:'#527f72',12:'#b87868',13:'#c1c5be',14:'#dce4e3',15:'#c7a16a',16:'#97aa83'};
 function updateHUD(dt){
  hud.style.display=session.started?'block':'none';
+ for(const id of ['health','hunger']){bars[id].fill.style.width=nourishment[id]+'%';bars[id].track.setAttribute('aria-valuenow',String(Math.round(nourishment[id])));}
  playerName.textContent=session.name||'Wanderer';guideName.textContent=guide.name||'Ember';
  bars.stamina.fill.style.width=(player.stamina*100)+'%';bars.stamina.track.setAttribute('aria-valuenow',String(Math.round(player.stamina*100)));
  plate.textContent=guide.name||'Ember';
@@ -241,7 +241,7 @@ function updateHUD(dt){
 }
 
 let last=performance.now();
-function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;world.update(player.x,player.z);if(world.loaded&&!session.started){wakeButton.disabled=false;wakeHint.textContent='Ready when you are.';}if(world.loaded&&session.started){if(!crossing.veil)player.update(dt);updateRitual(dt);updateCrossing(dt);if(!crossing.veil)mining.update(dt);attention.update();guide.update(dt);}updateSky(dt);updateHUD(dt);
+function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;world.update(player.x,player.z);if(world.loaded&&!session.started){wakeButton.disabled=false;wakeHint.textContent='Ready when you are.';}if(world.loaded&&session.started){nourishment.update(dt);if(!crossing.veil&&!nourishment.faintTime)player.update(dt);updateRitual(dt);updateCrossing(dt);if(!crossing.veil&&!nourishment.faintTime)mining.update(dt);attention.update();guide.update(dt);}updateSky(dt);updateHUD(dt);
  const rim=world.waking?0:crossing.manifest>0&&player.z<-96?0:THREE.MathUtils.smoothstep(islandRadius(player.x,player.z),.55,1);const held=player.mistStrength||0;scene.fog.density=.012-phase.value*.004+rim*.034+held*.075;
  scene.fog.color.copy(fogBase).lerp(new THREE.Color(0xffe5cf),held*.55);
  sky.position.copy(camera.position);renderer.render(scene,camera);}
@@ -256,7 +256,7 @@ const inventoryTitle=document.createElement('h2');inventoryTitle.textContent='Ga
 const inventoryRows=document.createElement('div'),inventoryHint=document.createElement('p');inventoryRows.id='inventory-slots';inventoryRows.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(68px,1fr));gap:8px;max-height:50vh;overflow-y:auto';inventoryHint.textContent='I or Esc to close · the world keeps moving';inventoryHint.style.fontSize='12px';inventory.append(inventoryTitle,inventoryRows,inventoryHint);document.body.append(inventory);
 const swatches={earth:'#83a68c',stone:'#b78e72',wood:'#927866',dryfiber:'#c8b58b',sparkstone:'#d9ac78','teal flora bits':'#8abbb2','violet flora bits':'#b2a0bb',sand:'#c7a16a'};
 let inventoryStamp='';
-function refreshInventory(){const stamp=JSON.stringify(player.materials);if(stamp===inventoryStamp)return;inventoryStamp=stamp;inventoryRows.replaceChildren();for(const [name,count] of Object.entries(player.materials)){const row=document.createElement('div'),swatch=document.createElement('span'),amount=document.createElement('strong'),label=document.createElement('small');row.className='inventory-slot';row.title=name;row.setAttribute('aria-label',name+': '+count);row.style.cssText='display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-width:0;min-height:86px;padding:8px 4px;background:#373344;border:1px solid #99857c55;border-radius:12px;text-align:center';swatch.style.cssText='width:22px;height:22px;border-radius:6px;background:'+(swatches[name]||'#b5a3a0');amount.textContent=count;amount.style.fontSize='16px';label.textContent=name;label.style.cssText='font-size:10px;color:#ccb8a8;overflow-wrap:anywhere';row.append(swatch,amount,label);inventoryRows.append(row);}if(!inventoryRows.childNodes.length)inventoryRows.textContent='Nothing gathered yet.';}
+function refreshInventory(){const stamp=JSON.stringify(player.materials);if(stamp===inventoryStamp)return;inventoryStamp=stamp;inventoryRows.replaceChildren();for(const [name,count] of Object.entries(player.materials)){const row=document.createElement(name==='sunmeadow grain'?'button':'div'),swatch=document.createElement('span'),amount=document.createElement('strong'),label=document.createElement('small');row.className='inventory-slot';row.title=name;if(name==='sunmeadow grain'){row.type='button';row.title='Eat sunmeadow grain · restores 25 hunger';row.onclick=()=>nourishment.eat();row.style.color='inherit';}row.setAttribute('aria-label',name+': '+count);row.style.cssText='display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-width:0;min-height:86px;padding:8px 4px;background:#373344;border:1px solid #99857c55;border-radius:12px;text-align:center';swatch.style.cssText='width:22px;height:22px;border-radius:6px;background:'+(swatches[name]||'#b5a3a0');amount.textContent=count;amount.style.fontSize='16px';label.textContent=name;label.style.cssText='font-size:10px;color:#ccb8a8;overflow-wrap:anywhere';row.append(swatch,amount,label);inventoryRows.append(row);}if(!inventoryRows.childNodes.length)inventoryRows.textContent='Nothing gathered yet.';}
 addEventListener('keydown',e=>{if(!session.started||e.target.matches?.('input,textarea,[contenteditable="true"]'))return;if(e.code==='KeyI'&&!e.repeat){e.preventDefault();inventory.hidden=!inventory.hidden;refreshInventory();}else if(e.code==='Escape')inventory.hidden=true;});
 setInterval(()=>{if(!inventory.hidden)refreshInventory();},150);
 window.grin.inventory={panel:inventory,refresh:refreshInventory};
@@ -393,3 +393,31 @@ window.grin.netValidation={approve:(d,who)=>approveBreak(d,who),receive:hostMess
 
 // Instrumentable equivalent of the existing host/join buttons.
 window.grin.multiplayer={host:()=>enterMultiplayer('host'),join:()=>enterMultiplayer('guest')};
+
+// Stage Nine — Relic, November 23, 2026. Nourishment stays strictly local.
+const nourishment={hunger:100,health:100,lowArmed:true,fullNoted:false,faintTime:0,care:0,revivals:0,
+ update(dt){
+  if(!session.started||!world.waking||!Number.isFinite(dt)||dt<=0)return;
+  if(this.faintTime>0){this.faintTime=Math.max(0,this.faintTime-dt);faintVeil.style.opacity=String(Math.min(1,this.faintTime<1?this.faintTime:(4-this.faintTime)/1.5));
+   if(this.faintTime===0){this.hunger=30;this.health=20;this.care=25;this.lowArmed=false;this.revivals++;player.keys.clear();player.jumpQueued=false;
+    guide.body.position.copy(camera.position).add(new THREE.Vector3(.8,.2,-.7));guide.say('fed-after-faint-'+this.revivals,"Easy. Slowly. You went too long without food, and the world went dark without asking you. I fed you what I could. Don't let it get that far again. The world is better with you awake.");
+    const line=guide.queue.pop();guide.queue.unshift(line);guide.cooldown=0;}
+   return;
+  }
+  const fedSeconds=Math.min(dt,this.hunger*15);this.hunger=Math.max(0,this.hunger-dt/15);
+  this.health=Math.max(0,this.health-(dt-fedSeconds)/5);
+  const careSeconds=Math.min(dt,this.care);this.care-=careSeconds;
+  if(this.hunger>=90)this.health=Math.min(100,this.health+dt/5);
+  else if(careSeconds>0)this.health=Math.min(100,this.health+careSeconds/5);
+  if(this.hunger<=25&&this.lowArmed){this.lowArmed=false;guide.seen.delete('hunger-low');guide.say('hunger-low',"Your hands are colder than they should be. Eat something before the dark comes.");}
+  if(this.health<=0){this.faintTime=4;this.care=0;player.keys.clear();player.jumpQueued=false;mining.cancel();inventory.hidden=true;crafting.hidden=true;document.exitPointerLock?.();}
+ },
+ eat(){if(!session.started||!world.waking||this.faintTime>0||!(player.materials['sunmeadow grain']>0))return false;
+  if(this.hunger>=100){if(!this.fullNoted){logLine("You're not hungry right now.");this.fullNoted=true;}return false;}
+  player.materials['sunmeadow grain']--;this.hunger=Math.min(100,this.hunger+25);this.fullNoted=false;if(this.hunger>=40)this.lowArmed=true;
+  logLine('Sunmeadow warmth, carried from the field into you.');refreshInventory();return true;
+ }
+};
+const faintVeil=document.createElement('div');faintVeil.id='faint-veil';faintVeil.setAttribute('aria-hidden','true');faintVeil.style.cssText='position:fixed;inset:0;z-index:40;background:#181724;opacity:0;pointer-events:none;transition:opacity 1.5s ease';document.body.append(faintVeil);
+for(const event of ['keydown','mousedown','click'])addEventListener(event,e=>{if(nourishment.faintTime>0){e.preventDefault();e.stopImmediatePropagation();}},true);
+window.grin.nourishment=nourishment;
