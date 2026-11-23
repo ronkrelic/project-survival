@@ -184,18 +184,32 @@ function updateCrossing(dt){
 
 
 // Quiet session cartography: unknown cells are never sampled for display.
-const hud=document.createElement('aside');hud.id='waking-hud';hud.setAttribute('aria-label','Companion and explored ground');hud.style.cssText='position:fixed;left:18px;bottom:18px;z-index:8;display:none;align-items:center;gap:12px;max-width:calc(100% - 36px);pointer-events:none;color:#f3cbb7;font:12px Georgia,serif';
-const face=document.createElement('img');face.src='../concept-art/ember-icon.jpg';face.alt='Ember';face.width=48;face.height=48;face.style.cssText='width:48px;height:48px;object-fit:cover;border-radius:50%;filter:saturate(.7) contrast(.88);box-shadow:0 0 18px #f0bc9630';
-// Pages publishes /docs only; the committed portrait is fetched from the same repo.
-face.src='https://raw.githubusercontent.com/ronkrelic/project-survival/main/concept-art/ember-icon.jpg';
-const map=document.createElement('canvas');map.id='explored-map';map.width=map.height=144;map.setAttribute('aria-label','Explored ground; mist hides the unknown');map.style.cssText='width:120px;height:120px;border-radius:32%;opacity:.85;box-shadow:0 0 24px #161d2860';
-mining.tally.style.cssText='max-width:240px;line-height:1.7;color:#e0d4c5;opacity:.85';hud.append(face,map,mining.tally);document.body.append(hud);
+const hud=document.createElement('aside');hud.id='waking-hud';hud.setAttribute('aria-label','Player, companion and explored ground');hud.style.cssText='position:fixed;inset:0;z-index:8;display:none;pointer-events:none;color:#f3cbb7;font:12px Georgia,serif';
+const hudStyle=document.createElement('style');hudStyle.textContent=`#waking-hud .soft-panel{background:#292b39df;border:1px solid #d7ae8c55;border-radius:18px;box-shadow:0 4px 22px #161d2835,inset 0 1px #f4d1af12}#vitals-stack{position:absolute;top:18px;left:18px;width:210px;display:grid;gap:10px}#player-box{padding:14px 16px}#player-hud-name{font-size:16px;overflow-wrap:anywhere;margin-bottom:10px}.vital{margin-top:7px}.vital-label{display:flex;justify-content:space-between;font-size:11px;color:#ddc9b9}.vital small{font-size:9px;opacity:.7}.vital-track{height:6px;background:#151d28;border-radius:8px;margin-top:4px;overflow:hidden}.vital-fill{height:100%;width:100%;border-radius:8px;background:#d7ac99}#hunger-fill{background:#c4ad79}#stamina-fill{background:#91b6a2}#guide-box{display:flex;gap:12px;align-items:center;padding:12px}#guide-hud-name{font-size:15px;overflow-wrap:anywhere}#guide-role{font-size:11px;color:#ccb8a8;margin-top:5px}#explored-map{position:absolute;right:18px;top:18px;width:120px;height:120px;padding:8px;box-sizing:content-box;opacity:.9}#carried-materials{position:absolute;left:18px;bottom:18px;max-width:240px;padding:10px 14px;line-height:1.7;color:#e0d4c5}@media(max-width:440px){#vitals-stack{left:10px;top:10px;width:180px}#explored-map{right:10px;top:10px;width:96px;height:96px}}`;document.head.append(hudStyle);
+const stack=document.createElement('div');stack.id='vitals-stack';
+const playerBox=document.createElement('section');playerBox.id='player-box';playerBox.className='soft-panel';playerBox.setAttribute('aria-label','Player vitals');
+const playerName=document.createElement('div');playerName.id='player-hud-name';playerBox.append(playerName);
+const bars={};
+for(const [id,label] of [['health','Health'],['hunger','Hunger'],['stamina','Stamina']]){
+ const row=document.createElement('div');row.className='vital';
+ const caption=document.createElement('div');caption.className='vital-label';caption.textContent=label;
+ if(id!=='stamina'){const note=document.createElement('small');note.textContent='not yet active';caption.append(note);}
+ const track=document.createElement('div');track.className='vital-track';track.setAttribute('role','progressbar');track.setAttribute('aria-label',label+(id==='stamina'?'':' (placeholder; not yet active)'));track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax','100');track.setAttribute('aria-valuenow','100');
+ const fill=document.createElement('div');fill.id=id+'-fill';fill.className='vital-fill';track.append(fill);row.append(caption,track);playerBox.append(row);bars[id]={fill,track};
+}
+const guideBox=document.createElement('section');guideBox.id='guide-box';guideBox.className='soft-panel';guideBox.setAttribute('aria-label','Spirit guide');
+const face=document.createElement('img');face.src='https://raw.githubusercontent.com/ronkrelic/project-survival/main/concept-art/ember-icon.jpg';face.alt='Ember portrait';face.width=48;face.height=48;face.style.cssText='width:48px;height:48px;object-fit:cover;border-radius:50%;filter:saturate(.7) contrast(.88);box-shadow:0 0 18px #f0bc9630';
+const guideInfo=document.createElement('div'),guideName=document.createElement('div'),guideRole=document.createElement('div');guideName.id='guide-hud-name';guideRole.id='guide-role';guideRole.textContent='spirit guide';guideInfo.append(guideName,guideRole);guideBox.append(face,guideInfo);stack.append(playerBox,guideBox);
+const map=document.createElement('canvas');map.id='explored-map';map.className='soft-panel';map.width=map.height=144;map.setAttribute('aria-label','Explored ground; mist hides the unknown');
+mining.tally.style.cssText='';mining.tally.className='soft-panel';hud.append(stack,map,mining.tally);document.body.append(hud);
 const plate=document.createElement('div');plate.id='guide-nameplate';plate.textContent='Ember';plate.style.cssText='position:fixed;left:0;top:0;z-index:9;display:none;pointer-events:none;color:#f3cbb7;font:13px Georgia,serif;letter-spacing:.04em;text-shadow:0 1px 8px #352533;transform:translate(-50%,-100%)';document.body.append(plate);
 guide.name='Ember';
 const atlas={island:new Map(),waking:new Map(),clock:1};
 const mapColors={1:'#789e8b',2:'#ac876e',3:'#ab8182',4:'#777688',5:'#927866',6:'#87a08a',7:'#8abbb2',8:'#b2a0bb',9:'#8c7378',10:'#d5d1b0',11:'#527f72',12:'#b87868',13:'#c1c5be',14:'#dce4e3',15:'#c7a16a',16:'#97aa83'};
 function updateHUD(dt){
- hud.style.display=session.started?'flex':'none';
+ hud.style.display=session.started?'block':'none';
+ playerName.textContent=session.name||'Wanderer';guideName.textContent=guide.name||'Ember';
+ bars.stamina.fill.style.width=(player.stamina*100)+'%';bars.stamina.track.setAttribute('aria-valuenow',String(Math.round(player.stamina*100)));
  plate.textContent=guide.name||'Ember';
  const point=guide.body.position.clone();point.y+=.38;point.project(camera);
  const visible=session.started&&!crossing.veil&&point.z>-1&&point.z<1&&Math.abs(point.x)<.98&&Math.abs(point.y)<.98;
