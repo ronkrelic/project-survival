@@ -370,3 +370,9 @@ function gatherLoose(p){if(!p||p.realm!==(world.waking?'waking':'island')||gathe
 addEventListener('keydown',e=>{if(e.code!=='KeyE'||e.repeat||!session.started||e.target.matches?.('input,textarea,[contenteditable="true"]'))return;const p=[...looseStones.values()].sort((a,b)=>Math.hypot(player.x-a.x,player.z-a.z)-Math.hypot(player.x-b.x,player.z-b.z))[0];gatherLoose(p);});
 setInterval(()=>{if(!session.started)return;updateLoose();if([...looseStones.values()].some(p=>Math.hypot(player.x-p.x,player.y-p.y,player.z-p.z)<4)&&!guide.seen.has('loose-stones'))guide.say('loose-stones','Small stones rest on the grass. E lifts one into your hand. C opens what you can make.');},500);
 window.grin.loose={items:looseStones,gathered:gatheredStones,update:updateLoose,gather:gatherLoose,sites:stoneSites};
+
+// Dawn lesson waits for an actual completed recipe, not a key press.
+const craftingLesson={stage:'waiting'};
+const beforeCraftLessons=guide.updateLessons.bind(guide);
+guide.updateLessons=function(){beforeCraftLessons();const l=craftingLesson;if(world.waking||!session.started||!this.lessons.done||phase.value!==1||l.stage==='done')return;if(craftedCount>0){if(l.stage==='waiting'){l.stage='done';return;}this.say('craft-ack',"There. Made by your own hands now. The world will notice.");l.stage='ack';}else if(l.stage==='waiting'&&!this.active&&!this.queue.length&&this.cooldown===0){this.say('craft-teach',"The island gave freely. Beyond the bridge, some things ask for more than hands. Let me show you how to make what you'll need.");l.stage='teaching';}if(l.stage==='teaching'&&this.completed.has('craft-teach')){this.say('craft-controls','Gather loose stones with E, wood by holding a tree. Press C to shape a tool.');l.stage='crafting';}if(l.stage==='ack'&&this.completed.has('craft-ack'))l.stage='done';};
+window.grin.crafting.lesson=craftingLesson;
