@@ -11,7 +11,7 @@ export function targetBlock(world,origin,direction,reach=5){
  }return null;
 }
 export function requiredTool(id){return [1,11,14,15,17].includes(id)?'wooden shovel':[5,6].includes(id)?'wooden axe':[2,3,12,13].includes(id)?'wooden pickaxe':null;}
-export function miningSeconds(id,bag={},selected=null){const base=materials[id]?.seconds??Infinity,tool=requiredTool(id);return tool&&!(selected===tool&&bag[tool])?(tool==='wooden pickaxe'?Infinity:base*3):base;}
+export function miningSeconds(id,bag={},selected=null){const base=materials[id]?.seconds??Infinity,tool=requiredTool(id);if(id===18)return selected==='stone pickaxe'&&bag[selected]>0?base/1.5:Infinity;const matches=tool&&bag[selected]>0&&(selected===tool||selected===tool.replace('wooden ','stone '));return tool&&!matches?(tool==='wooden pickaxe'?Infinity:base*3):base/(matches&&selected.startsWith('stone ')?1.5:1);}
 export class Mining{
  constructor(scene,camera,world,player,canvas){
   Object.assign(this,{scene,camera,world,player,canvas,held:false,elapsed:0,target:null,motes:[],clock:0});
