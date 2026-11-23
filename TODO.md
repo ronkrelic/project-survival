@@ -209,3 +209,18 @@ Integration repairs: web-editor duplicated hotbar content was repaired in a new 
 - [ ] Music future; no water/weather/monsters/death/durability/drag-drop/new biomes/mobile added. README credits untouched.
 
 Follow-up live probes: current-build crop stages 0/1/2/3 at controlled 0/60/120/180s and harvest yields1 grain/2seeds. Sound event counters fired from actual step, mining, guide, faint/revival and grain-eat paths; master mute verified. Begin-anew cancellation preserves saves. Continue restores inventory9 instead of mutated99; installing regenerated chunk reapplies placed cell ID1; re-installing its mesh leaves revision stable (no remesh loop). No captured errors. Native reload, actual accepted Begin-anew navigation, listening quality and real two-device play remain unverified.
+
+
+## Stage Eleven — Light & Song
+Relic, November 23 2026. Partial prioritized delivery.
+
+- [x] Per-player session island milestones keyed by ledger continuity identity; host-approved guest first fire and monolith; already-lit hearth two-second tending; private guide naming and bridge progression.
+- [x] Island hotbar visibility uses session.started only; existing keyboard/wheel/placement action gates untouched.
+- [x] Item 1 renderer-stub probe: 64 chunks, independent guest ignition/tending/monolith receipts, range/cost rejection, local bridge gate and private name/crossing, no captured errors. Native visuals and real two-device transport need Relic's playtest.
+- [ ] Vendor exact Three.js 0.180.0 module AND core under docs/js/vendor and redirect every game import. index.html has only main.js module entry, not a direct Three CDN script. No vendor file committed: the 1.4 MB core stalled the web editor; browser recovery left main unchanged.
+- [ ] Craftable/placeable/minable warm lanterns: C panel, waking-only right-click guards, host-ledger validation and painterly inline SVG. Vetoable recipe: 1 hearthglow + 2 wood.
+- [ ] Procedural WebAudio music after existing gesture unlock; mute/volume aware, light scheduled synthesis, crossfades by meadow/forest/canyon/frost-peaks/desert and day/night. Vetoable/tunable compositions: patient wistful-major island pads + sparse music-box plucks ~60 bpm; content sunlit meadow plucks + slow rolling arpeggios ~70 bpm. No external audio or real artist/song references.
+- [ ] Settings by mute in restyle palette: music/SFX volumes and mouse sensitivity, persisted in person:v1.
+- [ ] Canonical tools after Hands slot 0, then materials; selected-name fading label and item-name hover tooltips.
+- [ ] First waking-world dusk only, per player, near 600s in the 840s cycle (600 day/240 night), island exempt. Vetoable exact line: "The sun is setting. Your first dusk out here. The dark isn't empty, you know that now. Light something warm, and I'll keep watch with you." Do not alter existing dialogue.
+- [ ] Finish runtime probes per remaining feature and full regression pass, plus native/audio/two-device owner playtest.
