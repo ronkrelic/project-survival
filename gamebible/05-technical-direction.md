@@ -28,3 +28,9 @@ Work in small chunks. Commit each chunk to main immediately with a clear focused
 ## Stage Six implementation boundary
 
 The browser client currently loads pinned PeerJS 1.5.5 from jsDelivr, on demand only for multiplayer. This is a deliberate CDN deviation from the preference to vendor the library; no accounts or API keys. Vendoring for offline/dependency control remains follow-up. The original Three.js dependency is unchanged. Star data topology supports four total seats; host–guest media calls use per-guest host mixes, not positional audio. Session-only, with no saving or host migration. See sections 09 and 16 for the co-op and interface contract and explicitly vetoable shared-dawn ruling. Native visual/voice and cross-network reliability require real human testing; broker connection alone is not a successful two-player test.
+
+## Stage Eight — Relic decision, November 22, 2026
+
+Relic explicitly chose validated craft receipts (option A): guests attach ordered craft receipts to existing block requests. The host validates each three-wood recipe cost against its own guest-yield ledger and derives wooden tool ownership before permitting stone breaks or tilling. This extends the existing request payload, alongside the op=till soil delta; it adds no message type. Tools remain local per-player state. Wild patches and growing crops are LOCAL-ONLY, not synchronized; shared farming is a later pass.
+
+PeerJS 1.5.5 is now vendored at docs/js/vendor/peerjs.min.js with its MIT notice, replacing the historical CDN loader above. The local bundle is the only primary path, with no CDN fallback. A live instrumented host boot reached 0.peerjs.com and generated a join code. This removes the PeerJS CDN dependency, not the public signaling service or the existing Three.js CDN dependency. Real two-device WebRTC/voice remains a separate check.
