@@ -6,7 +6,7 @@ First-person 3D browser game. Procedural infinite voxel terrain uses chunked gen
 
 Block breaking and harvesting yield resources. A crafting system lets the guide help the player learn recipes.
 
-The earlier HUD concept shows health and hunger dials; [section 07](07-the-guide-in-depth.md) now decides the ember glow as the diegetic core condition display, dimming with hurt, cold, or hunger rather than an abstract dial. Mapping details and any secondary display remain open.
+Stage Five HUD revision, decided by Relic November 22, 2026: [section 09](09-the-journey-together.md) defines a top-left player name and health/hunger/stamina bars, with the guide portrait/name/spirit guide box below and a framed top-right explored-only minimap. Stamina powers Shift sprint; Space jumps. Health and hunger remain full, inert, labeled placeholders until their systems exist. Ember glow as a future diegetic condition cue remains direction in [section 07](07-the-guide-in-depth.md); there is no current damage, hunger, cold or death implementation.
 
 Multiplayer: co-op for up to 4 players in host/join sessions via PeerJS (WebRTC peer-to-peer; see [section 05](05-technical-direction.md)), in a shared world with per-player private guides unchanged.
 
@@ -19,7 +19,7 @@ Monoliths and the seasons of waking are decided progression direction in [sectio
 - Combat and enemy design remain deliberately deferred, including whether any combat exists; [section 06](06-cosmology-and-the-waking-world.md) establishes darkness and unmaking, not monsters, as the primary threat.
 - Death and respawn implementation details: [section 06](06-cosmology-and-the-waking-world.md) decides relighting at the last fire the player lit (campfire, hearth, or monolith), with carried items dropped where they fell and slowly unmaking in the dark. Item decay rates and whether anything else is lost remain open.
 - Materials are rostered in [section 14](14-resources-and-materials.md), with progression direction in [section 15](15-the-ways-of-waking.md). Crafting recipes and detailed resource-tier implementation remain open.
-- Hunger/health mechanics and exact condition-to-glow mapping, including any secondary display; ember glow as the core condition display is decided in [section 07](07-the-guide-in-depth.md).
+- Hunger/health mechanics and exact condition-to-glow mapping, the Stage Five placeholder bars do not implement either system; future ember glow is described in [section 07](07-the-guide-in-depth.md).
 - Save/persistence technical implementation remains open; [section 09](09-the-journey-together.md) decides that away fires burn down but never out, leaving a spark to relight from the ember on return. Burn-down rates and death-related fire state in multiplayer remain open.
 - Multiplayer direction and player scale are decided in [section 05](05-technical-direction.md): PeerJS host/join co-op for up to 4 players. World synchronization, host authority and session lifetime (including host departure/handoff), and co-op world persistence across sessions remain open.
 - Controls specification.
