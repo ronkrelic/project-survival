@@ -1,4 +1,4 @@
-import {SIZE,HEIGHT,index,voxelAt,hash} from './generation.js';
+import {SIZE,HEIGHT,index,voxelAt,wakingVoxel,hash} from './generation.js';
 // Mesh reads mutable block/light arrays. Future edits call mesh(chunk,seed) again.
 const faces=[
  {n:[1,0,0],v:[[1,0,0],[1,1,0],[1,1,1],[1,0,1]],shade:.78},
@@ -12,7 +12,7 @@ const faces=[
 const palette=[[0,0,0],[.30,.52,.43],[.57,.36,.22],[.54,.30,.29],[.075,.09,.12],[.26,.20,.17],[.25,.40,.32],[.18,.85,.78],[.64,.38,.88],[.25,.16,.17],[.78,.76,.55]];
 export function mesh(chunk,seed) {
  const {cx,cz,blocks,light}=chunk,positions=[],colors=[];
- const at=(x,y,z)=>y<0?2:y>=HEIGHT?0:(x>=0&&z>=0&&x<SIZE&&z<SIZE?blocks[index(x,y,z)]:(chunk.halo?.[`${x},${y},${z}`]??voxelAt(cx*SIZE+x,y,cz*SIZE+z,seed)));
+ const at=(x,y,z)=>y<0?2:y>=HEIGHT?0:(x>=0&&z>=0&&x<SIZE&&z<SIZE?blocks[index(x,y,z)]:(chunk.halo?.[`${x},${y},${z}`]??(chunk.waking?wakingVoxel:voxelAt)(cx*SIZE+x,y,cz*SIZE+z,seed)));
  for(let y=0;y<HEIGHT;y++)for(let z=0;z<SIZE;z++)for(let x=0;x<SIZE;x++) {
   const i=index(x,y,z),id=blocks[i];if(!id)continue;
   const band=id===9?(y%2?.72:1.08):1;
