@@ -62,3 +62,13 @@ HUD revision stamps replace per-frame full inventory JSON. Placement invalidates
 Controlled browser microbenchmarks: 100,000 old JSON HUD stamps 73.7ms versus revision stamps 7.1ms; a representative 10,000-delta/1,000-crop envelope serialized 455,324 characters in 1.2ms. These are one-browser microbenchmarks, not frame-rate guarantees or an improved serialization claim. 10,000 edits to one delta coordinate retain one log entry.
 
 Renderer-stub probes execute committed game functions with controlled time, not a second game implementation. Passed: solo and host earth loops, repeated hello, identity reconnect balance, 1,100 acknowledged crafts, missing placement-result ledger reconciliation, invalid/mixed/truncated save rejection, failed atomic write retaining the prior pair, save round-trip, notices after restore, crop disposal, fresh/load waking aurora, tier gates, mute reinitialization, planting/growth/harvest, cooking/eating, hunger/faint/revival, 840-second clock rollover, barehand sparkstone and held ritual through dawn/bridge manifestation. They do not certify native rendering, full human-paced island traversal, WebRTC transport, browser crashes during OS storage flush, or real two-device multiplayer. Native WebGL initialization is unavailable in this test browser.
+
+
+## Stage Eleven — Light & Song (partial delivery)
+Relic, November 23 2026.
+
+- Island progression is session-local per continuity identity (the same bearer identity as guest ledger checkpoints): first fire, monolith touch, naming, crossing. Shared dawn is not a personal completion flag. Host validates guest hearth/monolith requests; guides and names remain private/local. A lit hearth accepts a two-second aimed held tend interaction for that player's first fire. No second ignition cost. A personal monolith touch is required before the local bridge/name arc opens.
+- Hotbar visibility depends only on session.started; keyboard, wheel and placement island guards are unchanged.
+- Renderer-stub controlled probes passed independent guest fire/monolith flags, host range/cost validation, private naming/crossing and 64-chunk boot without captured errors. These are not real two-device transport or native visual sign-off.
+- Vendoring remains unfinished: current imports use three@0.180.0/build/three.module.js, which also imports three.core.js (revision 180); index.html loads main.js, not a direct Three script. No version upgrade or import redirection was committed. The browser editor stalled on the 1.4 MB core; the abandoned draft was not committed.
+- Follow-up priority remains vendoring, lanterns, procedural music, settings, hotbar refinements, first-dusk line. See TODO for scope and vetoable proposals; none of those features is claimed implemented here.
