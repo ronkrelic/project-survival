@@ -185,7 +185,9 @@ Integration repairs: web-editor duplicated hotbar content was repaired in a new 
 ### Still unverified / future
 - [ ] Native WebGL visual quality, 48px icon aesthetics, input/scroll/pointer-lock feel and audio listening/each contextual trigger.
 - [ ] Real two-device transport, reconnect continuity and restored host ledger session behavior (direct validator tests only).
-- [ ] Full current-build crop growth/harvest regression, confirmation-dialog click path and reload/chunk-remesh save restoration beyond in-memory roundtrip.
+- [ ] Native page-reload save restoration and accepted Begin-anew navigation remain unverified (isolated storage clear and cancellation are verified).
 - [ ] Shared multiplayer crops remain local-only; do not imply synced farms.
 - [ ] Hearthglow ore uses are future; no ore crafting/use yet.
 - [ ] Music future; no water/weather/monsters/death/durability/drag-drop/new biomes/mobile added. README credits untouched.
+
+Follow-up live probes: current-build crop stages 0/1/2/3 at controlled 0/60/120/180s and harvest yields1 grain/2seeds. Sound event counters fired from actual step, mining, guide, faint/revival and grain-eat paths; master mute verified. Begin-anew cancellation preserves saves. Continue restores inventory9 instead of mutated99; installing regenerated chunk reapplies placed cell ID1; re-installing its mesh leaves revision stable (no remesh loop). No captured errors. Native reload, actual accepted Begin-anew navigation, listening quality and real two-device play remain unverified.
