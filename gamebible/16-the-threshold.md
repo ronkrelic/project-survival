@@ -96,3 +96,10 @@ Once-only stone feedback, also verbatim:
 > Stone won't yield to hands alone. It asks for an edge.
 
 The arrival is (0.5, waking surface + 1, 0.5) with seed 73021. A deterministic existing tree stands at (-5,-22), about 22.6 metres from the origin: reasonable walking reach, so no terrain or tree-placement adjustment was necessary. A fresh-arrival probe hand-chopped three trunk blocks, crafted a wooden pickaxe with the resulting three wood, then mined stone. Tools do not gate the threshold.
+
+
+## Stage Nine — nourishment as care — Relic, November 23, 2026
+
+This section supersedes the earlier inert-health/hunger and carried-but-not-eaten Stage Five/Eight notes. Relic’s design: hunger drains slowly; empty hunger costs health; zero health means fainting, NEVER death. The guide feeds the traveler, who wakes where they fell with inventory, tools and position intact. No drops or penalties beyond lost time. All nourishment and the guide are strictly per-player LOCAL state. No multiplayer message types or protocol changes; host validation and ordered craft receipts stay as before.
+
+The island provides freely: hunger does not drain there, starvation cannot damage health there, and fainting cannot begin there, even with empty hunger. Nourishment begins only after the crossing into the waking world. The complete bare-handed sparkstone → dryfiber → fire → dawn → bridge → naming arc stays unchanged. No ritual, dialogue, terrain, sky or movement changes. This is the safe threshold, never a death trap.
