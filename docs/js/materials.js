@@ -15,6 +15,7 @@ export const materials=Object.freeze({
  15:{name:'amber sand',yield:'sand',seconds:.4,color:0xc7a16a},
  16:{name:'dryfiber tuft',yield:'dryfiber',seconds:.4,color:0x97aa83},
  10:{name:'sparkstone',yield:'sparkstone',seconds:1.5,color:0xe3dfb9},
+ 17:{name:'tilled earth',yield:'earth',seconds:.4,color:0x69574d},
  9:{name:'foundation stone',seconds:Infinity,color:0x8c7378}
 });
 export const breakable=id=>Number.isFinite(materials[id]?.seconds);
