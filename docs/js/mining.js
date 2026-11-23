@@ -10,7 +10,7 @@ export function targetBlock(world,origin,direction,reach=5){
   const a=next.indexOf(Math.min(...next));distance=next[a];p[a]+=step[a];next[a]+=delta[a];
  }return null;
 }
-export function requiredTool(id){return [1,11,14,15,17].includes(id)?'wooden shovel':id===5?'wooden axe':[2,3,12,13].includes(id)?'wooden pickaxe':null;}
+export function requiredTool(id){return [1,11,14,15,17].includes(id)?'wooden shovel':[5,6].includes(id)?'wooden axe':[2,3,12,13].includes(id)?'wooden pickaxe':null;}
 export function miningSeconds(id,bag={}){const base=materials[id]?.seconds??Infinity,tool=requiredTool(id);return tool&&!bag[tool]?(tool==='wooden pickaxe'?Infinity:base*3):base;}
 export class Mining{
  constructor(scene,camera,world,player,canvas){
