@@ -63,3 +63,13 @@ Decided by Relic, November 22, 2026. After the existing basic movement acknowled
 A pre-emptive jump or sprint reduces its lesson to the acknowledgment, with no scolding or repeated instruction. Acknowledgments remain jump-first, sprint-second; gathering/fire lines wait behind this pair. Dialogue stays in the single companion queue and each line is once-only. Only the island teaches these; the waking world does not repeat them. Gathering and the ritual remain usable while waiting; their pending dialogue resumes after the two acknowledgments.
 
 Space and either Shift work on the island and in the waking world. Jump/sprint and the top-left player vitals box, guide portrait/name/“spirit guide” box, framed top-right explored-only minimap, separate realm maps and bottom-left material tally follow [section 09](09-the-journey-together.md). Stamina is functional; health/hunger are full labeled placeholders pending their systems, not new damage, food or death mechanics. Rendered feel, real pointer-lock tutorial sequencing and movement tuning await Relic's playtest.
+
+## Stage Six: carried things and remembered words
+
+November 22, 2026. I toggles a cozy matte read-only inventory; Esc closes it. Material names and counts match the carried tally, with little matte color swatches. Opening it never pauses the island. No equip, use, dragging or placing in this stage.
+
+A soft bottom-right journal holds up to 100 entries. Material gains append immediately, and a guide line is remembered when actually spoken, not merely queued. Old entries gently fade to 55% opacity after thirty seconds but remain scrollable until the 100-entry bound. Each spirit's words remain local.
+
+In multiplayer the same panel becomes character-named text chat (280 characters). Enter opens and focuses the input; all game keydown handling is intercepted while typing, movement/jump state is cleared, and mining is canceled. Enter sends; Esc discards the draft. I does not open inventory while typing. Text is rendered as text, never HTML. The world keeps running. Wake alone remains the original stage-five path plus inventory and journal; no existing guide lines, mining durations, movement constants, mist-catch or sky equations change.
+
+The shared-dawn call is vetoable: the first valid host-approved ritual lights the shared hearth and starts every player's own dawn. Late joiners acknowledge an already-warm hearth without another bill or cold-circle reprimands. Naming, the bridge and one-way mist crossing remain personal; avatars only appear in the same realm. See section 09 for networking and voice controls. These implementation notes do not constitute visual/audio or two-human playtest sign-off.
