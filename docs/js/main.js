@@ -47,8 +47,21 @@ const halo=new THREE.Mesh(new THREE.SphereGeometry(.32,12,8),new THREE.MeshBasic
 const wings=[];for(const side of [-1,1]){const wing=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),new THREE.MeshBasicMaterial({color:0xf3c8af,transparent:true,opacity:.12,depthWrite:false}));wing.scale.set(.18,.07,.025);wing.position.set(side*.16,.05,0);guide.body.add(wing);wings.push(wing);}
 guide.light=new THREE.PointLight(0xffbd7c,1.3,22,1.4);guide.body.add(guide.light);scene.add(guide.body);
 const guideLine=document.getElementById('guide-line');
-guide.say=function(id,text){if(this.seen.has(id))return;this.seen.add(id);this.queue.push({id,text,duration:Math.max(5,text.split(/\s+/).length*.32+2)});};
+guide.say=function(id,text){if(this.seen.has(id))return;
+ if(!world.waking&&!this.lessons.done&&['gather','cold-circle','enough-fire','monolith','nudge','way-open','ask-name'].includes(id)){this.lessons.deferred.set(id,text);return;}this.seen.add(id);this.queue.push({id,text,duration:Math.max(5,text.split(/\s+/).length*.32+2)});};
+// Relic, November 22: one responsive island lesson at a time, never a key press guess.
+guide.lessons={stage:'jump',done:false,deferred:new Map()};guide.completed=new Set();
+guide.updateLessons=function(){
+ const l=this.lessons;if(world.waking||l.done||!this.completed.has('steps'))return;
+ if(l.stage==='jump'&&player.didJump){this.say('jump-ack',"There. The world holds you up on the way down.");this.delight=3;l.stage='jump-ack';}
+ else if(l.stage==='jump'&&!this.active&&!this.queue.length&&this.cooldown===0)this.say('jump-teach',"The island climbs in steps. When a step is too tall, press space and rise to meet it.");
+ if(l.stage==='jump-ack'&&this.completed.has('jump-ack'))l.stage='sprint';
+ if(l.stage==='sprint'&&player.didSprint){this.say('sprint-ack',"The wind noticed you.");this.delight=3;l.stage='sprint-ack';}
+ else if(l.stage==='sprint'&&!this.active&&!this.queue.length&&this.cooldown===0)this.say('sprint-teach',"If you're eager, hold shift and run. It spends your strength; walk a while and it comes back.");
+ if(l.stage==='sprint-ack'&&this.completed.has('sprint-ack')){l.done=true;for(const [id,text] of l.deferred)this.say(id,text);l.deferred.clear();}
+};
 guide.update=function(dt){
+ this.updateLessons();
  this.clock+=dt;this.delight=Math.max(0,this.delight-dt);this.cooldown=Math.max(0,this.cooldown-dt);
  const step=Math.hypot(player.x-this.last.x,player.z-this.last.z);this.last={x:player.x,z:player.z};
  if(player.awake&&player.wake===1&&!world.waking){
@@ -74,7 +87,7 @@ guide.update=function(dt){
   target.addScaledVector(forward,1.65).addScaledVector(right,.28);target.y+=.14;
   if(a.id==='nudge'&&t>a.duration+1.55){const toward=new THREE.Vector3(12-player.x,0,-62-player.z).normalize();target.copy(camera.position).addScaledVector(toward,3.8);target.y+=.35;}
   const end=a.duration+(a.id==='nudge'?5.55:1.55);
-  if(t>=end){this.active=null;this.mode='ambient';this.cooldown=3;}
+  if(t>=end){this.completed.add(a.id);this.active=null;this.mode='ambient';this.cooldown=3;}
  }else{
   // A shoulder-side arc stays outside the forward view; never a leading waypoint.
   target.addScaledVector(right,1.05+Math.sin(this.clock*.55)*.18).addScaledVector(forward,-.3+Math.sin(this.clock*.32)*.22);target.y+=.42;
