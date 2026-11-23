@@ -112,3 +112,11 @@ Designed by Relic · November 23, 2026. Implemented proposals below remain vetoa
 ### Threshold boundary
 The threshold retains its authored dawn and existing ritual/dialogue. No hunger, death, placing, cooking or day/night cycle on the island. Bare hands must still complete gathering and the 3-sparkstone/5-dryfiber, two-second hold ritual, 90-second dawn, bridge and naming arc. No new guide lines were introduced in Stage Ten.
 Vetoable persistence simplicity: do not save an island run in progress. An uncrossed player Wakes fresh; crossing and naming are save milestones, as are dawn and revival. Continue resumes crossed state; position restoration is solo-only. Begin anew requires confirmation and clears personal plus local world saves. Shared guest crops remain local-only. Stage Ten selection supersedes context auto-apply in the waking world without requiring a tool to complete the island.
+
+
+## Stage Eleven — Every wanderer's threshold
+Relic, November 23 2026.
+
+The hearth's world light belongs to the host's umpire state, but its first-fire meaning belongs to each player. Another player's ignition never completes one's own arc. At a hearth already burning, a two-second aimed held tend interaction fulfills that player's first-fire milestone without a second resource charge. Afterward each player approaches the monolith for their own aurora, then gives their own guide a name and crosses their own bridge. Session milestones follow the existing ledger continuity identity, never a display name. Guides remain private/local. The island is still not saved mid-run.
+
+The 90-second authored dawn, existing guide dialogue and island action restrictions are preserved. Hotbar visibility on the island does not grant tool use or placement. The first-dusk waking-world line remains pending, not spoken by this delivery; it must never run on the island.
