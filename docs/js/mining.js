@@ -18,7 +18,6 @@ export class Mining{
   this.glow=new THREE.Mesh(new THREE.BoxGeometry(1.004,1.004,1.004),new THREE.MeshBasicMaterial({color:0xe6d6bf,transparent:true,opacity:0,depthWrite:false}));
   scene.add(this.outline,this.glow);this.outline.visible=this.glow.visible=false;
   this.dot=document.createElement('div');this.dot.textContent='·';this.dot.style.cssText='position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);color:#e0d4c5;font:20px serif;pointer-events:none;opacity:.65';document.body.append(this.dot);
-  this.tally=document.createElement('div');this.tally.id='carried-materials';this.tally.style.cssText='position:fixed;bottom:16px;left:18px;color:#e0d4c5;font:12px system-ui;pointer-events:none;opacity:.8';this.tally.textContent='Carried: —';document.body.append(this.tally);
   this.moteGeometry=new THREE.SphereGeometry(.035,4,3);
   canvas.addEventListener('mousedown',e=>{if(e.button!==0||document.pointerLockElement!==canvas)return;this.held=true;this.elapsed=0;this.startHum();});
   addEventListener('mouseup',e=>{if(e.button===0)this.cancel();});addEventListener('blur',()=>this.cancel());
@@ -49,7 +48,7 @@ export class Mining{
      const progress=Math.min(1,this.elapsed/seconds);
      this.glow.material.opacity=.03+.14*progress;this.outline.material.opacity=.28+.2*progress;
      if(Math.floor(this.clock*14)!==Math.floor((this.clock-dt)*14))this.mote(t);
-     if(this.elapsed>=seconds){const removed=this.world.remove(t.x,t.y,t.z);if(removed){const name=materials[removed].yield;this.player.materials[name]=(this.player.materials[name]||0)+1;if(removed===1)this.player.materials.dryfiber=(this.player.materials.dryfiber||0)+1;this.tally.textContent='Carried: '+Object.entries(this.player.materials).map(([k,v])=>k+' '+v).join(' · ');for(let i=0;i<14;i++)this.mote(t,true);}this.elapsed=0;this.target=null;}
+     if(this.elapsed>=seconds){const removed=this.world.remove(t.x,t.y,t.z);if(removed){const name=materials[removed].yield;this.player.materials[name]=(this.player.materials[name]||0)+1;if(removed===1)this.player.materials.dryfiber=(this.player.materials.dryfiber||0)+1;for(let i=0;i<14;i++)this.mote(t,true);}this.elapsed=0;this.target=null;}
     }else{this.glow.material.opacity=.045+.02*Math.sin(this.clock*5);hum=.018;}
    }else{this.glow.material.opacity=.018;this.outline.material.opacity=.28;}
   }else this.elapsed=0;
