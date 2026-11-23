@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import * as THREE from './vendor/three.module.js';
 import {materials,breakable} from './materials.js';
 // Grid traversal, not triangle picking: works with any loaded voxel realm.
 export function targetBlock(world,origin,direction,reach=5){

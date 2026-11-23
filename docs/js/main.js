@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import * as THREE from './vendor/three.module.js';
 import {World} from './world.js';
 import {Player} from './player.js';
 import {terrainHeight,wakingHeight,hash,islandRadius,sparkNodes} from './generation.js';

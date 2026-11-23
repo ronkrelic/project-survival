@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import * as THREE from './vendor/three.module.js';
 import {SIZE,HEIGHT,index,generate,generateWaking,MIN_CHUNK,MAX_CHUNK} from './generation.js';
 import {appendDelta} from './deltas.js';
 import {breakable} from './materials.js';
