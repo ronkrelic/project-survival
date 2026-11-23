@@ -84,7 +84,7 @@ function column(x,z,seed){
 export function wakingVoxel(x,y,z,seed=DEFAULT_SEED){
  if(y<0||y>=HEIGHT)return 0;const p=column(x,z,seed);
  if(y<2)return FOUNDATION_STONE;
- if(y<=p.h){if(y===p.h)return p.surface;if(p.type===3&&y>p.h-4)return 13;if(p.type===4&&y>p.h-3)return 15;return Math.floor(y/4)%2?2:3;}
+ if(y<=p.h){if((p.type===2||p.type===3)&&y>=p.h-12&&y<p.h-1&&hash(Math.floor(x/3),Math.floor(z/3),seed+Math.floor(y/3)*41+910)<.09)return 18;if(y===p.h)return p.surface;if(p.type===3&&y>p.h-4)return 13;if(p.type===4&&y>p.h-3)return 15;return Math.floor(y/4)%2?2:3;}
  for(const [yy,id] of p.extra)if(y===yy)return id;return 0;
 }
 export function generateWaking(cx,cz,seed=DEFAULT_SEED){
