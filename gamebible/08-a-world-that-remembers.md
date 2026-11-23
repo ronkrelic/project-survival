@@ -39,3 +39,15 @@ The player can only sleep by fire. Sleeping sometimes brings a short, strange dr
 - Creature list and behavior; whether any animals are huntable remains undecided.
 - Footpath wear thresholds and visual treatment.
 - Dream content system and frequency.
+
+## Stage Eight: first tools and first rows — Relic, November 22, 2026
+
+This playable-stage decision supersedes earlier "no tools/crafting" slice notes; the larger fire-tier vision above remains future work. Relic's revised chain is hands → wood → wooden tools → stone. The island remains a pure, bare-handed threshold; the first crafting lesson belongs shortly after arrival in the waking meadow.
+
+Ownership applies the matching tool automatically: wooden shovel for earth, sand, snow and tilled earth; wooden axe for trunk and leaf blocks; wooden pickaxe for the stone family (including canyon-red and pale stone, and the class future ore must join). Without one, dirt and trees loosen at one-third speed; stone makes no progress. Sparkstone is the ritual exception, still gathered by hand. A wooden hoe opens dirt-like, uncovered ground into dark, painterly-row farmland with E. No equip screen, hotbar or durability in this stage.
+
+Wild sunmeadow grain patches are plentiful in meadow and light in forest. A mature patch gives one food item and two seeds; E plants one seed in an empty tilled block. Four visible stages mature at 0, 60, 120 and 180 session seconds. Mature harvest repeats one grain and two seeds. Food is carried, not eaten: health and hunger remain inert placeholders. No water/watering, cooking, saving, random seeds or additional biomes.
+
+**Vetoable implementation calls:** automatic contextual tools, three-wood costs, timings, E interaction, and the proposed crop/food name "sunmeadow grain" and "sunmeadow seeds". These are implementation proposals under Relic's direction, not extra owner-approved dialogue.
+
+Soil is a host-validated block delta. Crops, wild patches and growth are LOCAL-ONLY per player, not shared or saved; a later multiplayer farming pass must synchronize them. Tool ownership and recipe execution are local, with host-side receipt/cost reconciliation on block requests to reject illegal guest mining/tilling.
