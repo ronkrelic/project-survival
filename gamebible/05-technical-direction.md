@@ -17,10 +17,14 @@ Work in small chunks. Commit each chunk to main immediately with a clear focused
 ## Open questions / gaps
 
 - Proper architecture document.
-- Host authority and session lifetime: if the host leaves, does the session end, or is host migration/handoff wanted?
-- Signaling broker: use the PeerJS default free public broker, or self-host the signaling server later on the owner's own web hosting?
+- Stage Six settles host authority and session lifetime: host umpire, no migration; guests retain received deltas and may continue alone.
+- Stage Six uses the default free public PeerJS broker. Self-hosted signaling remains a future option.
 - NAT traversal fallback: TURN/relay support for strict networks.
-- World synchronization architecture: terrain seed sync plus block-change deltas; the approach remains undecided.
-- How each player's private spirit guide stays client-side and private in the netcode.
+- Stage Six settles synchronization: fixed seed 73021, host-approved session deltas for breaks and the lit hearth; position/facing/realm at 15 Hz, locally interpolated.
+- Stage Six keeps all guide state entirely client-side: no spirit messages or serialized guide fields.
 - Persistence of a co-op world across sessions.
 - Exact terrain generation/noise algorithm and implementation parameters.
+
+## Stage Six implementation boundary
+
+The browser client currently loads pinned PeerJS 1.5.5 from jsDelivr, on demand only for multiplayer. This is a deliberate CDN deviation from the preference to vendor the library; no accounts or API keys. Vendoring for offline/dependency control remains follow-up. The original Three.js dependency is unchanged. Star data topology supports four total seats; host–guest media calls use per-guest host mixes, not positional audio. Session-only, with no saving or host migration. See sections 09 and 16 for the co-op and interface contract and explicitly vetoable shared-dawn ruling. Native visual/voice and cross-network reliability require real human testing; broker connection alone is not a successful two-player test.
