@@ -48,3 +48,15 @@ On the island, after basic movement and before gathering/fire dialogue, the guid
 - Whether the full map lives with the guide and is viewed by asking him.
 - Flagged follow-up: [the approved HUD concept art](../concept-art/ember-03-ui-hud-concept.jpg) predates the minimap decision and needs a revision pass. The image is not changed by this design update.
 - 
+
+## Stage Six: an island with friends — November 22, 2026
+
+The same optional character name leads to Wake (unchanged single-player) or Multiplayer, then Host / Join. The host offers a six-character code using ABCDEFGHJKLMNPQRSTUVWXYZ23456789; the code stays in a small HUD chip. Up to four total players, with the host as umpire and relay. This is a session, not an account or a save. The free public PeerJS broker handles signaling; the client currently loads pinned PeerJS 1.5.5 from jsDelivr (not vendored). Network and microphone failure never mean the end of a solo journey.
+
+The fixed seed stays 73021. Position, facing and realm travel at 15 Hz; first-pass soft-beveled matte voxel avatars interpolate locally and carry character-name plates with a simple walk bob. Different realms hide each other. Block-break requests go through the host's canonical terrain/delta ledger; accepted removals broadcast to everyone and replay into streamed chunks and late joins. Guest yields and ritual costs are host-accounted. No placing, broader crafting, random seeds or persistence.
+
+Voice is non-positional: entering Host or Join requests the microphone. PeerJS media calls run host–guest, with the host mixing other guests into each guest's outgoing stream. The HUD's Mic on / Mic muted button controls the local microphone; Hear voices resumes playback if the browser's autoplay policy requires a gesture. Denying the microphone leaves text and walking available. Real audio quality, NAT reliability and avatar aesthetics need human playtesting.
+
+The guide is strictly personal: no spirit body, position, nameplate, dialogue, lesson state or naming is sent. Guide lines enter only the local journal. Each player's bridge, naming and mist crossing remain personal. Shared-dawn ruling (explicitly VETOABLE by Relic): any player's completed fire ritual lights the hearth for all and releases each local dawn. An already-lit circle does not demand another payment or repeat cold-circle scolding; the existing way-open acknowledgment follows the local dawn/bridge. This overrides the earlier suggestion that every island ritual must be independent, not the privacy of the crossing.
+
+Bad codes, failed connection and lost threads use soft notices. A guest whose host leaves continues locally with already-received edits, not host migration. Reloading still begins a new session.
