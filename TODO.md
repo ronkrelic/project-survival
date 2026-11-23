@@ -68,7 +68,7 @@ Unverified: rendered visual quality, portrait/nameplate/map legibility in real W
 
 Implemented in order, each chunk committed through the GitHub web editor and read back exactly: inventory, journal/chat surface, host-authoritative PeerJS transport, avatars/voice, authority and failure hardening. README credits untouched. This is implementation, not human playtest sign-off.
 
-Inventory: I toggles, Esc closes; carried counts and matte swatches, world still runs. No use/equip/drag. Bottom-right journal records pickups and actually-spoken local guide lines; 100 entries, gentle fade to 55% after 30 seconds. Multiplayer text has character names, 280-character cap, Enter focus/send, Esc cancel, and all game keys suppressed while typing.
+Inventory: I toggles, Esc closes; carried counts and matte swatches, world still runs. No use/equip/drag. Stage Seven below supersedes this original list inventory and bottom-right journal layout. The journal records pickups and actually-spoken local guide lines; 100 entries, gentle fade to 55% after 30 seconds. Multiplayer text has character names, 280-character cap, Enter focus/send, Esc cancel, and all game keys suppressed while typing.
 
 Wake stays the original solo entry. Multiplayer offers Host/Join and Wake alone fallback; six-character ABCDEFGHJKLMNPQRSTUVWXYZ23456789 code retained in HUD. PeerJS 1.5.5 currently loads from pinned jsDelivr CDN, NOT vendored: explicit deviation from the preference to vendor. Default free public broker, no accounts or keys. Four total seats; host umpire and relay; fixed seed 73021, 15 Hz position/facing/realm, local interpolation. Host-approved block ledger and shared lit hearth replay for late joins/streamed chunks. Guest yields and ritual costs are host-accounted. Failed ICE channels and unintroduced connections release seats.
 
@@ -85,3 +85,24 @@ Passed: inventory I open/I close/Esc close, wood count 7, guide clock advancing 
 A loopback PeerJS client obtained a broker ID and reached the host's pending connection; both ICE connections became failed/disconnected without an open data channel. Live code-based joining, two-way chat, replicated positions/block/hearth, real remote avatars, cross-network reliability and voice are therefore UNVERIFIED, not passed. The successful host probe supplied no microphone stream. Native visual/portrait/avatar quality, pointer-lock feel, actual two-human voice and three/four-player behavior need real testing. The final cleanup commit closes failed ICE channels; its wiring is statically checked, not a successful-network proof.
 
 Next test: Relic + a friend on separate devices/networks, join by the HUD code, move/turn, text both ways, mine the same block, light either hearth, cross separately, test mute/Hear voices and host leaving. Strict-network TURN/relay support remains follow-up, not a guaranteed capability. No aesthetic or two-human sign-off is claimed.
+
+
+## Stage Seven — November 22, 2026
+
+Relic playtested Stage Six tonight and reported “it works”; the earlier instrumented limitations above remain historical evidence, not a denial of that playtest. Scoped HUD polish implemented through the GitHub web editor, one thematic chunk committed to main at a time, with commit-pinned exact source readbacks. README credits untouched.
+
+- Multiplayer session code, Mic on / Mic muted and Hear voices remain one vertical matte panel, now top-right immediately left of the minimap: top 18px, right 168px, width 154px, compact full-width buttons. At <=440px: right 136px, width 130px. Hidden in solo.
+- Removed carried tally creation, styling, HUD attachment and all repaint references from main.js and mining.js. Inventory is the only carried-material display. Material proxy journal logging remains. No mining or ritual behavior changes.
+- Journal moved to left 18px / bottom 18px; existing size, log, guide, chat, typing guards, 100-entry cap and fade retained. Firefox scrollbar-width thin; scrollbar-color #99857c #292938; stable gutter. WebKit width 7px; #292938 rounded track; #99857c thumb, 2px track-colored border, 8px radius; hover #c4ad99.
+- Inventory is read-only matte slots, auto-fit/minmax(68px,1fr), 8px gaps, 50vh scroll limit. Four columns at the normal 340px inner width, wrapping to fewer columns on narrow screens and more rows for new materials. Swatch, count, small name and hover title in each slot. I/Esc and simulation remain unchanged. Empty-bag message retained.
+- Gamebible 09 and Stage Six interface canon in 16 updated to this layout.
+
+### Live Pages instrumented verification
+
+On https://ronkrelic.github.io/project-survival/ at 1440×765, November 22: fetched deployed main/mining with cache-busting after Pages deployment; WebGL renderer stubbed, all other game modules real. A first cached-module attempt loaded the old mining tally, so it was discarded and a fresh cache-busted probe repeated the checks. Clean probes loaded 64 island chunks with no captured error/unhandledrejection. This is not rendered/native-pointer-lock sign-off.
+
+Solo cluster computed display:none; tally absent (zero matching DOM elements). Injected material gains logged immediately. Inventory showed wood 7, stone 12, dryfiber 5, sparkstone 3, with four computed 79px columns; I opened and Esc closed. Guide clock advanced while open. Enter focused chat; WASD/Space/Shift/I left keys empty, no jump queued, inventory closed; Enter logged the local message, Esc discarded the draft. 105 injected entries retained exactly 100. Existing fade timing retained unchanged in source.
+
+Injected host state and actual boot/transport handlers (no PeerJS connection) gave the multiplayer panel x1118/y18/154×109 and minimap x1284/y18/138×138: 12px gap, no overlap. Journal x18/y619/346×128, bottom 18px, clear of vitals and map; with maximum scrollback its height remains bounded. Computed scrollbar: thin; rgb(153,133,124) rgb(41,41,56); stable gutter; WebKit width 7px and thumb rgb(153,133,124). Host send broadcast, host guest-request relay and guest receive handlers produced named journal messages using an in-memory fake connection; that tests flow wiring, not network delivery.
+
+Unverified here: rendered appearance, Firefox engine rendering (properties checked in Chromium), real two-device chat/voice/NAT, native pointer lock, and narrow-screen overall HUD overlap. No gameplay, dialogue, network protocol, terrain, sky or movement changes; transport/voice behavior not redesigned. Relic’s visual pass remains the aesthetic check.
