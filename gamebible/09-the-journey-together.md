@@ -100,3 +100,13 @@ Approved verbatim by Relic — revival:
 Approved verbatim by Relic — low hunger (once per hysteresis cycle):
 
 > Your hands are colder than they should be. Eat something before the dark comes.
+
+
+## Stage Ten — The settling-in update
+
+Designed by Relic · November 23, 2026. Implemented proposals below remain vetoable by Relic; they are not prior approved dialogue.
+
+### Deliberate hands and quiet sound
+Stage Ten explicitly SUPERSEDES Stage Eight context auto-apply: the selected owned tool is what acts; default is bare hands. Matte bottom-center dynamic hotbar: hands, wooden pickaxe/axe/shovel/hoe, stone pickaxe/axe/shovel/hoe, then carried earth/sand/snow/stone/echostone/wood; maximum fifteen slots including hands. Only owned entries appear. 0 selects hands, 1–9 selects the first nine owned entries; wheel cycles every slot. No drag-and-drop. Scheme/order/slot count vetoable. Selection is quiet with no journal logging (vetoable).
+Tilling requires a selected wooden or stone hoe (vetoable), while planting/harvesting stay contextual. Tool ownership alone never grants its mining effect. Inline code-drawn matte SVG item icons share one style across hotbar, inventory and recipe cards, without external image assets.
+WebAudio provides gently biome-varied wind, surface footsteps, material-class mining, block placement, eating, nearby lit-hearth crackle, guide chime and faint/revival tones. Top-right Sound on/off toggle placement is vetoable. Audio unlocks/resumes on user gesture and master mute silences it. No music this stage; music remains future. Selection, vitals, cooking and sound are personal/local. Existing host validation remains authoritative for shared edits; true two-device verification is still required.
