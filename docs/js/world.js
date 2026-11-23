@@ -30,7 +30,7 @@ export class World {
   const id=this.block(x,y,z);if(![1,11,14,15,19].includes(id)||this.block(x,y+1,z))return false;
   const key=(this.waking?'waking':'island')+':'+[x,y,z].join(':');this.farmland.set(key,{x,y,z});this.paintSoil(x,y,z);return true;
  }
- paintSoil(x,y,z){const cx=Math.floor(x/SIZE),cz=Math.floor(z/SIZE),c=this.chunks.get(this.key(cx,cz));if(!c)return;const i=index(x-cx*SIZE,y,z-cz*SIZE);if(![1,11,14,15,17].includes(c.blocks[i]))return;c.blocks[i]=17;c.revision++;this.dirty.add(this.key(cx,cz));}
+ paintSoil(x,y,z){const cx=Math.floor(x/SIZE),cz=Math.floor(z/SIZE),c=this.chunks.get(this.key(cx,cz));if(!c)return;const i=index(x-cx*SIZE,y,z-cz*SIZE);if(![1,11,14,15,17,19].includes(c.blocks[i]))return;c.blocks[i]=17;c.revision++;this.dirty.add(this.key(cx,cz));}
  block(x,y,z){
   if(y<0||y>=HEIGHT)return 0;
   const cx=Math.floor(x/SIZE),cz=Math.floor(z/SIZE),c=this.chunks.get(this.key(cx,cz));
