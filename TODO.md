@@ -22,7 +22,7 @@ Designed and Made by Relic & Ember Studios. We wake worlds.
 
 ## Stage 4 — started November 22, 2026
 
-95% of this slice: implementation and instrumented functional checks complete; rendered/pointer-lock playtest and visual feel are not signed off. The one-way mist threshold enters fixed-seed (73021) streamed voxel terrain. Relic's five biomes replace the initial grassland fallback: Meadow, Forest, Canyon and River Lands, Frost Peaks, Desert. Low-frequency biome weights blend heights and surface distributions. River channels are pale stone beds, not water: there was no water block. Worker meshing, gatherable surfaces and session removals remain the block method.
+Stage Four completed through fa7f4b9; Relic playtested and accepted it tonight (“Everything looks good”). The historical instrumented checks and their renderer limitations below remain evidence, not a substitute for that owner sign-off. The one-way mist threshold enters fixed-seed (73021) streamed voxel terrain. Relic's five biomes replace the initial grassland fallback: Meadow, Forest, Canyon and River Lands, Frost Peaks, Desert. Low-frequency biome weights blend heights and surface distributions. River channels are pale stone beds, not water: there was no water block. Worker meshing, gatherable surfaces and session removals remain the block method.
 
 The quiet HUD carries the committed face portrait, explored-only minimap and existing material tally. Ember's peach nameplate starts at waking and follows the bridge rename. Only the approved naming question changed; the way-open and chosen-name/“I'll keep it” beats remain.
 
@@ -44,3 +44,13 @@ Awaiting Relic: real pointer-lock tutorial-to-world playthrough; mist-veil conti
 10. Open design questions: food without hunting, what survives death, endgame, co-op permissions.
 11. Naming the canyon-red material, Relic’s call.
 12. GoFundMe campaign, once the tutorial slice is whole.
+
+## Stage 5 — November 22, 2026
+
+Implemented, awaiting live probes and Relic’s feel pass. Top-left player name and three bars, guide portrait/session name/spirit guide box below, framed top-right explored-only minimap, existing tally bottom left. Separate island/waking exploration and bridge rename remain. Health/hunger are full inert bars explicitly labeled not yet active; they await damage and food systems. No health, food or death mechanics.
+
+Space jump: 6.6m/s impulse, existing gravity 18m/s², ideal height 1.21m, existing camera damping 12/s. Shift moving sprint: 6.4m/s vs walk 4m/s (1.6×); stamina 100 points, drain 16/s, regen 12/s when not sprinting, exhaustion lock until 25 points. No drain standing still; no jump cost.
+
+Relic expanded scope to responsive island teaching: after basic movement, jump instruction → wait for actual jump → acknowledgment → sprint instruction → wait for actual moving Shift sprint → acknowledgment → gathering/fire dialogue. Early actions reduce their lessons to acknowledgment. Approved wording lives in sections 09/16; sprint line uses “stamina”, not “strength”. Existing lines unchanged. Only island teaching, single once-only queue, guide delight reacts. Gathering/ritual gameplay itself is not locked by the lessons.
+
+Pending: instrumented deployed-build regression of movement, stamina cutoff, ceiling/body collision, void mist-catch, HUD/rename/map separation and the full tutorial arc; rendered visual quality and real pointer-lock/feel sign-off remain for Relic. No saving, day/night, co-op, placing, new crafting or audio; terrain, sky math, mining and mist timing unchanged. README credits untouched.
