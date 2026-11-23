@@ -5,6 +5,7 @@ export class Player {
   this.x=spawn.x;this.y=spawn.y;this.z=spawn.z;this.visualY=this.y;
   this.yaw=0;this.pitch=-.035;this.vy=0;this.grounded=true;
   this.home={...spawn};this.lastShore={...spawn};this.mistCatch=null;this.mistStrength=0;
+  this.didJump=false;this.didSprint=false;
   this.stamina=1;this.sprintExhausted=false;this.sprinting=false;this.jumpQueued=false;
   this.keys=new Set();this.wake=0;this.awake=false;
   canvas.addEventListener('click',()=>{canvas.requestPointerLock()?.catch(console.warn);});
@@ -79,6 +80,7 @@ export class Player {
   const moving=['KeyW','KeyA','KeyS','KeyD'].some(k=>this.keys.has(k));
   if(this.sprintExhausted&&this.stamina>=.25)this.sprintExhausted=false;
   this.sprinting=locked&&this.wake===1&&!this.mistCatch&&moving&&!this.sprintExhausted&&(this.keys.has('ShiftLeft')||this.keys.has('ShiftRight'));
+  if(this.sprinting)this.didSprint=true;
   this.stamina=Math.max(0,Math.min(1,this.stamina+dt*(this.sprinting?-.16:.12)));
   if(this.stamina===0){this.sprintExhausted=true;this.sprinting=false;}
   if(!locked||this.mistCatch)this.jumpQueued=false;
@@ -94,7 +96,7 @@ export class Player {
    const n=Math.max(1,Math.ceil(dt/.012));
    for(let j=0;j<n;j++){
     this.grounded=!this.clear(this.x,this.y-.035,this.z);
-    if(j===0&&jump&&this.grounded){this.vy=6.6;this.grounded=false;}
+    if(j===0&&jump&&this.grounded){this.vy=6.6;this.grounded=false;this.didJump=true;}
     if(this.grounded)this.lastShore={x:this.x,y:this.y,z:this.z};
     this.move(dx/n,0);this.move(0,dz/n);
     if(!this.hasGround(this.x,this.z)){this.catchMist();break;}
