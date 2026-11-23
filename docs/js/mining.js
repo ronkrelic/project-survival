@@ -27,7 +27,8 @@ export class Mining{
  }
  cancel(){this.held=false;this.elapsed=0;if(this.gain)this.gain.gain.value=0;}
  startHum(){
-  try{if(!this.audio){this.audio=new (window.AudioContext||window.webkitAudioContext)();this.gain=this.audio.createGain();this.gain.gain.value=0;const tone=this.audio.createOscillator();tone.type='sine';tone.frequency.value=92;tone.connect(this.gain).connect(this.audio.destination);tone.start();}this.audio.resume().catch(()=>{});}catch{}
+  try{if(!this.audio){const sound=window.grin?.sound;sound?.unlock();
+this.audio=sound?.context;if(!this.audio)return;this.gain=this.audio.createGain();this.gain.gain.value=0;const tone=this.audio.createOscillator();tone.type='sine';tone.frequency.value=92;tone.connect(this.gain).connect(window.grin.sound.sfx);tone.start();}this.audio.resume().catch(()=>{});}catch{}
  }
  mote(t,collect=false){
   const m=materials[t.id],object=new THREE.Mesh(this.moteGeometry,new THREE.MeshBasicMaterial({color:m?.color||0xc7b5a0,transparent:true,opacity:.6,depthWrite:false}));

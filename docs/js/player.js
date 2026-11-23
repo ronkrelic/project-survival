@@ -14,7 +14,7 @@ export class Player {
   });
   document.addEventListener('mousemove',e=>{
    if(document.pointerLockElement!==canvas)return;
-   this.yaw-=e.movementX*.002;this.pitch=Math.max(-1.45,Math.min(1.45,this.pitch-e.movementY*.002));
+   this.yaw-=e.movementX*.002*(this.sensitivity||1);this.pitch=Math.max(-1.45,Math.min(1.45,this.pitch-e.movementY*.002*(this.sensitivity||1)));
   });
   addEventListener('keydown',e=>{if(document.pointerLockElement===canvas&&['KeyW','KeyA','KeyS','KeyD','Space','ShiftLeft','ShiftRight'].includes(e.code)){e.preventDefault();if(e.code==='Space'&&!e.repeat&&!this.keys.has('Space'))this.jumpQueued=true;this.keys.add(e.code);}});
   addEventListener('keyup',e=>this.keys.delete(e.code));
