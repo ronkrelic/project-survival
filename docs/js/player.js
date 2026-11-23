@@ -5,18 +5,19 @@ export class Player {
   this.x=spawn.x;this.y=spawn.y;this.z=spawn.z;this.visualY=this.y;
   this.yaw=0;this.pitch=-.035;this.vy=0;this.grounded=true;
   this.home={...spawn};this.lastShore={...spawn};this.mistCatch=null;this.mistStrength=0;
+  this.stamina=1;this.sprintExhausted=false;this.sprinting=false;this.jumpQueued=false;
   this.keys=new Set();this.wake=0;this.awake=false;
   canvas.addEventListener('click',()=>{canvas.requestPointerLock()?.catch(console.warn);});
   document.addEventListener('pointerlockchange',()=>{
-   if(document.pointerLockElement===canvas)this.awake=true;else this.keys.clear();
+   if(document.pointerLockElement===canvas)this.awake=true;else {this.keys.clear();this.jumpQueued=false;}
   });
   document.addEventListener('mousemove',e=>{
    if(document.pointerLockElement!==canvas)return;
    this.yaw-=e.movementX*.002;this.pitch=Math.max(-1.45,Math.min(1.45,this.pitch-e.movementY*.002));
   });
-  addEventListener('keydown',e=>{if(document.pointerLockElement===canvas&&['KeyW','KeyA','KeyS','KeyD','Space'].includes(e.code)){e.preventDefault();this.keys.add(e.code);}});
+  addEventListener('keydown',e=>{if(document.pointerLockElement===canvas&&['KeyW','KeyA','KeyS','KeyD','Space','ShiftLeft','ShiftRight'].includes(e.code)){e.preventDefault();if(e.code==='Space'&&!e.repeat&&!this.keys.has('Space'))this.jumpQueued=true;this.keys.add(e.code);}});
   addEventListener('keyup',e=>this.keys.delete(e.code));
-  addEventListener('blur',()=>this.keys.clear());
+  addEventListener('blur',()=>{this.keys.clear();this.jumpQueued=false;});
   this.camera.rotation.order='YXZ';this.update(0);
  }
  clear(x,y,z) {
@@ -74,23 +75,33 @@ export class Player {
   const locked=document.pointerLockElement===this.canvas;
   if(this.awake)this.wake=Math.min(1,this.wake+dt/2);
   if(this.world.loaded&&!this.mistCatch&&(this.y<0||(!this.world.waking&&(Math.abs(this.x)>=128||Math.abs(this.z)>=(this.realmLimit||128)))||(!this.grounded&&!this.hasGround(this.x,this.z))))this.catchMist();
+  // Full reservoir: 100 points, 16/s drain, 12/s recovery; restart at 25.
+  const moving=['KeyW','KeyA','KeyS','KeyD'].some(k=>this.keys.has(k));
+  if(this.sprintExhausted&&this.stamina>=.25)this.sprintExhausted=false;
+  this.sprinting=locked&&this.wake===1&&!this.mistCatch&&moving&&!this.sprintExhausted&&(this.keys.has('ShiftLeft')||this.keys.has('ShiftRight'));
+  this.stamina=Math.max(0,Math.min(1,this.stamina+dt*(this.sprinting?-.16:.12)));
+  if(this.stamina===0){this.sprintExhausted=true;this.sprinting=false;}
+  if(!locked||this.mistCatch)this.jumpQueued=false;
   if(this.mistCatch)this.updateMist(dt);
   else if(locked&&this.wake===1){
    let f=Number(this.keys.has('KeyW'))-Number(this.keys.has('KeyS'));
    let r=Number(this.keys.has('KeyD'))-Number(this.keys.has('KeyA'));
    const len=Math.hypot(f,r)||1;f/=len;r/=len;
-   const dx=(r*Math.cos(this.yaw)-f*Math.sin(this.yaw))*4*dt;
-   const dz=(-f*Math.cos(this.yaw)-r*Math.sin(this.yaw))*4*dt;
+   const speed=this.sprinting?6.4:4;
+   const jump=this.jumpQueued;this.jumpQueued=false;
+   const dx=(r*Math.cos(this.yaw)-f*Math.sin(this.yaw))*speed*dt;
+   const dz=(-f*Math.cos(this.yaw)-r*Math.sin(this.yaw))*speed*dt;
    const n=Math.max(1,Math.ceil(dt/.012));
    for(let j=0;j<n;j++){
     this.grounded=!this.clear(this.x,this.y-.035,this.z);
+    if(j===0&&jump&&this.grounded){this.vy=6.6;this.grounded=false;}
     if(this.grounded)this.lastShore={x:this.x,y:this.y,z:this.z};
     this.move(dx/n,0);this.move(0,dz/n);
     if(!this.hasGround(this.x,this.z)){this.catchMist();break;}
     this.vy=Math.max(-30,this.vy-18*dt/n);
     const next=this.y+this.vy*dt/n;
     if(this.clear(this.x,next,this.z)){this.y=next;this.grounded=false;}
-    else {this.y=Math.ceil(next-.001);this.vy=0;this.grounded=true;}
+    else {const falling=this.vy<=0;this.y=falling?Math.ceil(next-.001):Math.floor(this.y+1.799)-1.8;this.vy=0;this.grounded=falling;}
    }
   }
   // Damped camera absorbs step-ups and landings; collision body stays exact.
