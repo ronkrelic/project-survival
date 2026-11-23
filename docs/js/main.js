@@ -336,3 +336,13 @@ voice.call=async function(id){await this.request();if(net.mode!=='host'||this.ca
 voice.answer=async function(call){if(net.mode!=='guest'||call.peer!==net.host?.peer){call.close();return;}await this.request();const stream=net.localStream||this.context?.createMediaStreamDestination().stream;if(stream){call.answer(stream);this.attach(call);}else call.close();};
 const mute=netButton('Mic on',netChip,()=>{voice.muted=!voice.muted;for(const t of net.localStream?.getAudioTracks()||[])t.enabled=!voice.muted;mute.textContent=voice.muted?'Mic muted':'Mic on';mute.setAttribute('aria-pressed',String(voice.muted));});mute.id='voice-mute';mute.setAttribute('aria-label','Toggle microphone mute');
 netButton('Hear voices',netChip,()=>{voice.context?.resume().catch(()=>{});for(const a of voice.audio.values())a.play().catch(()=>{});});window.grin.voice=voice;
+
+// Host accounts for guest yields and validates the shared ritual, not a client claim.
+const guestBags=new Map(),baseApproveBreak=approveBreak,baseHostMessage=hostMessage;
+approveBreak=function(d,who){const id=baseApproveBreak(d,who);if(id&&who!==net.peer.id){const bag=guestBags.get(who)||{};const name=netMaterials[id].yield;bag[name]=(bag[name]||0)+1;if(id===1)bag.dryfiber=(bag.dryfiber||0)+1;guestBags.set(who,bag);}return id;};
+hostMessage=function(c,m){if(m?.type==='fire-request'){const p=net.people.get(c.peer),bag=guestBags.get(c.peer);if(net.lit){send(c,{type:'dawn'});return;}if(!c.psName||!p||p.realm!=='island'||Math.hypot(p.x-ritual.x,p.z-ritual.z)>5||!bag||(bag.sparkstone||0)<3||(bag.dryfiber||0)<5)return;bag.sparkstone-=3;bag.dryfiber-=5;}baseHostMessage(c,m);};
+// Keep accepted edits when a guest continues alone, including later streamed chunks.
+world.install=function(data){rawInstall(data);for(const d of net.deltas.values())if(d.realm===(this.waking?'waking':'island')&&Math.floor(d.x/32)===data.cx&&Math.floor(d.z/32)===data.cz)rawRemove(d.x,d.y,d.z);};
+wakeButton.addEventListener('click',e=>{if(net.mode!=='solo'&&!net.ready){e.preventDefault();e.stopImmediatePropagation();notice('The thread is still finding your friends. Wait a moment, or choose Wake alone.');}},true);
+netButton('Wake alone',netPanel,()=>{net.peer?.destroy();net.peer=null;net.host=null;net.mode='solo';net.ready=false;netNotice.hidden=true;for(const track of net.localStream?.getTracks()||[])track.stop();wakeButton.click();});
+const voiceRequest=voice.request.bind(voice);voice.request=async function(){const stream=await voiceRequest();mute.textContent=stream?(this.muted?'Mic muted':'Mic on'):'No microphone';return stream;};
