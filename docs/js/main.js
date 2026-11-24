@@ -152,12 +152,12 @@ monolithGlow.position.set(12.5,terrainHeight(12,-62)+24.5,-61.5);monolithGlow.re
 let auroraVisible=false,islandGather=0;
 function auroraEligible(day,worldSeed){return hash(day,401,worldSeed)<1/3;}
 function auroraEnvelope(seconds){
- // Night settles at 600; gather to 630, hold to 780, dissolve by 810.
- const t=Math.max(0,Math.min(1,(seconds-600)/30,(810-seconds)/30));
+ // Night settles at 600; gather to 630, hold, then dissolve into dawn at 780.
+ const t=Math.max(0,Math.min(1,(seconds-600)/30,(780-seconds)/30));
  return t*t*(3-2*t);
 }
 function auroraClearNight(day,worldSeed){
- const begin=(day-1)*840+600,end=(day-1)*840+810;
+ const begin=(day-1)*840+600,end=(day-1)*840+780;
  for(let w=Math.floor(begin/1680);w<=Math.floor(end/1680);w++){
   const start=w*1680+180+hash(w,301,worldSeed)*600,duration=180+hash(w,302,worldSeed)*60;
   if(start<end&&start+duration>begin)return false;
