@@ -260,14 +260,91 @@ requestAnimationFrame(frame);
 // Read-only inspection seam for desktop smoke tests; never displayed in-world.
 window.grin={session,seed,player,world,renderer,scene,camera,mining,attention,guide,phase,sky,ritual,hearth,aurora,updateRitual,updateSky,crossing,bridge,shore,updateCrossing,acceptGuideName,atlas,updateHUD};
 
-// Stage Six: a read-only, session inventory. The island keeps breathing.
+
+// Stage Twelve: presentation-only slots over the existing pooled material counts.
+// Inventory and hotbar can show the SAME stack; never add those counts together.
+const bagLayout=[],barLayout=[],bagKnown=new Set(),barKnown=new Set();
+let layoutRevision=0,loadoutDrag=null,suppressLoadoutClick=false;
+function loadoutSlots(kind){
+ const list=kind==='bag'?bagLayout:barLayout;
+ const names=kind==='bag'?Object.keys(player.materials):hotbarOrder.filter(k=>player.materials[k]>0);
+ const known=kind==='bag'?bagKnown:barKnown;
+ for(const name of names)if(!known.has(name)){known.add(name);const empty=list.indexOf(null);if(empty<0)list.push(name);else list[empty]=name;}
+ while(list.length<(kind==='bag'?27:14))list.push(null);
+ return list;
+}
+function markLoadoutSlot(node,kind,index,name){
+ node.dataset.loadout=kind;node.dataset.slot=String(index);
+ node.dataset.item=name||'';node.draggable=false;
+}
+function loadoutTarget(e){
+ const node=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-loadout]');
+ return node&&!node.closest('[hidden]')?node:null;
+}
+function finishLoadoutDrag(target){
+ const d=loadoutDrag;if(!d)return;
+ loadoutDrag=null;d.ghost?.remove();
+ document.querySelectorAll('.loadout-origin,.loadout-target').forEach(n=>n.classList.remove('loadout-origin','loadout-target'));
+ document.body.classList.remove('loadout-dragging');
+ if(!d.active)return;
+ suppressLoadoutClick=true;setTimeout(()=>{suppressLoadoutClick=false;},0);
+ if(target&&!inventory.hidden&&player.materials[d.name]>0){
+  const from=loadoutSlots(d.kind),to=loadoutSlots(target.dataset.loadout),i=Number(target.dataset.slot),other=to[i];
+  // A mirrored same-item target already owns this entire pooled stack: merge is a no-op.
+  if(from[d.index]===d.name&&other!==d.name){
+   if(from===to){[from[d.index],to[i]]=[other,d.name];}
+   else{
+    // Keep each view unique when swapping its shortcut to an already visible stack.
+    const existing=to.indexOf(d.name),reverse=other?from.indexOf(other):-1;
+    from[d.index]=other;to[i]=d.name;
+    (d.kind==='bag'?bagKnown:barKnown).add(other);
+    (target.dataset.loadout==='bag'?bagKnown:barKnown).add(d.name);
+    if(existing>=0)to[existing]=other;
+    if(reverse>=0&&reverse!==d.index)from[reverse]=null;
+   }
+   layoutRevision++;
+  }
+ }
+ inventoryStamp='';hotbarStamp='';refreshInventory();refreshHotbar();
+}
+const loadoutStyle=document.createElement('style');loadoutStyle.textContent="#inventory .loadout-origin,#hotbar .loadout-origin{opacity:.35}#inventory .loadout-target,#hotbar .loadout-target{outline:2px solid #d49b54;outline-offset:1px;background:#f7ecd7!important}.loadout-dragging,.loadout-dragging *{user-select:none!important;cursor:grabbing!important}.loadout-ghost{position:fixed;z-index:100;pointer-events:none;display:flex;align-items:center;gap:6px;padding:8px;background:#eadcc5ed;color:#514c49;border:1px solid #aa9475;border-radius:6px;box-shadow:0 3px 12px #514c4930;font:14px Georgia,serif}";document.head.append(loadoutStyle);
+addEventListener('pointerdown',e=>{
+ if(e.pointerType!=='mouse'||e.button!==0||inventory.hidden||nourishment.faintTime>0)return;
+ const node=e.target.closest('[data-loadout]'),name=node?.dataset.item;
+ if(!name||!(player.materials[name]>0))return;
+ finishLoadoutDrag(null);
+ loadoutDrag={kind:node.dataset.loadout,index:Number(node.dataset.slot),name,x:e.clientX,y:e.clientY,id:e.pointerId,active:false};
+},true);
+addEventListener('pointermove',e=>{
+ const d=loadoutDrag;if(!d||e.pointerId!==d.id)return;
+ if(inventory.hidden||!(player.materials[d.name]>0)||nourishment.faintTime>0){finishLoadoutDrag(null);return;}
+ if(!d.active&&Math.hypot(e.clientX-d.x,e.clientY-d.y)<6)return;
+ if(!d.active){
+  d.active=true;hotbarTip.hidden=true;document.body.classList.add('loadout-dragging');
+  d.ghost=document.createElement('div');d.ghost.className='loadout-ghost';d.ghost.setAttribute('aria-hidden','true');
+  d.ghost.innerHTML=itemIcon(d.name,32);const count=document.createElement('strong');count.textContent=player.materials[d.name];d.ghost.append(count);document.body.append(d.ghost);
+ }
+ e.preventDefault();d.ghost.style.left=(e.clientX+12)+'px';d.ghost.style.top=(e.clientY+12)+'px';
+ document.querySelectorAll('[data-loadout]').forEach(n=>{
+  n.classList.toggle('loadout-origin',n.dataset.loadout===d.kind&&Number(n.dataset.slot)===d.index);
+  n.classList.toggle('loadout-target',n===loadoutTarget(e));
+ });
+},{capture:true,passive:false});
+addEventListener('pointerup',e=>{if(loadoutDrag&&e.pointerId===loadoutDrag.id)finishLoadoutDrag(loadoutTarget(e));},true);
+addEventListener('pointercancel',()=>finishLoadoutDrag(null),true);
+addEventListener('blur',()=>finishLoadoutDrag(null));
+addEventListener('keydown',e=>{if(['Escape','KeyI','KeyC','Enter'].includes(e.code))finishLoadoutDrag(null);},true);
+addEventListener('click',e=>{if(suppressLoadoutClick){e.preventDefault();e.stopImmediatePropagation();}},true);
+addEventListener('dragstart',e=>{if(e.target.closest('[data-loadout]'))e.preventDefault();},true);
+
+// Stage Six: a session inventory. The island keeps breathing.
 const inventory=document.createElement('section');inventory.id='inventory';inventory.className='soft-panel';inventory.hidden=true;
 inventory.setAttribute('aria-label','Gathered materials');inventory.style.cssText='position:fixed;z-index:22;left:50%;top:50%;transform:translate(-50%,-50%);width:min(340px,85vw);padding:24px;color:#ead9c7;background:#292938f2;border:1px solid #99857c;border-radius:18px;font:16px Georgia,serif';
 const inventoryTitle=document.createElement('h2');inventoryTitle.textContent='Gathered along the way';inventoryTitle.style.fontSize='20px';
 const inventoryRows=document.createElement('div'),inventoryHint=document.createElement('p');inventoryRows.id='inventory-slots';inventoryRows.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(68px,1fr));gap:8px;max-height:50vh;overflow-y:auto';inventoryHint.textContent='I or Esc to close · the world keeps moving';inventoryHint.style.fontSize='12px';inventory.append(inventoryTitle,inventoryRows,inventoryHint);document.body.append(inventory);
 const swatches={earth:'#83a68c',stone:'#b78e72',wood:'#927866',dryfiber:'#c8b58b',sparkstone:'#d9ac78','teal flora bits':'#8abbb2','violet flora bits':'#b2a0bb',sand:'#c7a16a'};
 let inventoryStamp='',inventoryRevision=0;
-function refreshInventory(){const stamp=inventoryRevision+':'+player.selectedTool;if(stamp===inventoryStamp)return;inventoryStamp=stamp;inventoryRows.replaceChildren();for(const [name,count] of Object.entries(player.materials)){const row=document.createElement((name==='sunmeadow grain'||cookedFoods[name]||hotbarOrder.includes(name))?'button':'div'),swatch=document.createElement('span'),amount=document.createElement('strong'),label=document.createElement('small');row.className='inventory-slot';row.title=name;if(hotbarOrder.includes(name)){row.type='button';row.title='Pin '+name;row.setAttribute('aria-pressed',String(player.selectedTool===name));row.onclick=()=>{selectSlot(name);refreshInventory();};}if(name==='sunmeadow grain'){row.type='button';row.title='Eat sunmeadow grain · restores 25 hunger';row.onclick=()=>nourishment.eat();row.style.color='inherit';}if(cookedFoods[name]){const f=cookedFoods[name];row.type='button';row.title='Eat '+name+' · '+f.hunger+' hunger + '+f.health+' health';row.onclick=()=>eatCooked(name);}row.setAttribute('aria-label',name+': '+count+(name==='sunmeadow grain'?' · eat, restores 25 hunger':''));row.style.cssText='display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-width:0;min-height:86px;padding:8px 4px;background:#373344;border:1px solid #99857c55;border-radius:12px;text-align:center';swatch.style.cssText='width:22px;height:22px;border-radius:6px;background:'+(swatches[name]||'#b5a3a0');swatch.style.cssText='width:32px;height:32px';swatch.innerHTML=itemIcon(name);amount.textContent=count;amount.style.fontSize='16px';label.textContent=name+(name==='sunmeadow grain'?' · eat':'');label.style.cssText='font-size:10px;color:#ccb8a8;overflow-wrap:anywhere';row.append(swatch,amount,label);inventoryRows.append(row);}while(inventoryRows.childNodes.length<27){const empty=document.createElement('div');empty.className='inventory-slot';empty.setAttribute('aria-hidden','true');inventoryRows.append(empty);}}
+function refreshInventory(){if(loadoutDrag?.active)return;const stamp=inventoryRevision+':'+layoutRevision+':'+player.selectedTool;if(stamp===inventoryStamp)return;inventoryStamp=stamp;inventoryRows.replaceChildren();for(const [index,name] of loadoutSlots('bag').entries()){if(!name){const empty=document.createElement('div');empty.className='inventory-slot';markLoadoutSlot(empty,'bag',index,null);inventoryRows.append(empty);continue;}const count=player.materials[name]||0;const row=document.createElement((name==='sunmeadow grain'||cookedFoods[name]||hotbarOrder.includes(name))?'button':'div'),swatch=document.createElement('span'),amount=document.createElement('strong'),label=document.createElement('small');row.className='inventory-slot';markLoadoutSlot(row,'bag',index,name);row.title=name;if(hotbarOrder.includes(name)){row.type='button';row.title='Pin '+name;row.setAttribute('aria-pressed',String(player.selectedTool===name));row.onclick=()=>{selectSlot(name);refreshInventory();};}if(name==='sunmeadow grain'){row.type='button';row.title='Eat sunmeadow grain · restores 25 hunger';row.onclick=()=>nourishment.eat();row.style.color='inherit';}if(cookedFoods[name]){const f=cookedFoods[name];row.type='button';row.title='Eat '+name+' · '+f.hunger+' hunger + '+f.health+' health';row.onclick=()=>eatCooked(name);}row.setAttribute('aria-label',name+': '+count+(name==='sunmeadow grain'?' · eat, restores 25 hunger':''));row.style.cssText='display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-width:0;min-height:86px;padding:8px 4px;background:#373344;border:1px solid #99857c55;border-radius:12px;text-align:center';swatch.style.cssText='width:22px;height:22px;border-radius:6px;background:'+(swatches[name]||'#b5a3a0');swatch.style.cssText='width:32px;height:32px';swatch.innerHTML=itemIcon(name);amount.textContent=count;amount.style.fontSize='16px';label.textContent=name+(name==='sunmeadow grain'?' · eat':'');label.style.cssText='font-size:10px;color:#ccb8a8;overflow-wrap:anywhere';row.append(swatch,amount,label);inventoryRows.append(row);}while(inventoryRows.childNodes.length<27){const empty=document.createElement('div');empty.className='inventory-slot';empty.setAttribute('aria-hidden','true');inventoryRows.append(empty);}}
 addEventListener('keydown',e=>{if(!session.started||e.target.matches?.('input,textarea,[contenteditable="true"]'))return;if(e.code==='KeyI'&&!e.repeat){e.preventDefault();inventory.hidden=!inventory.hidden;if(!inventory.hidden){mining.cancel();player.keys.clear();player.jumpQueued=false;document.exitPointerLock?.();}refreshInventory();}else if(e.code==='Escape')inventory.hidden=true;});
 setInterval(()=>{if(!inventory.hidden)refreshInventory();},150);
 window.grin.inventory={panel:inventory,refresh:refreshInventory};
@@ -468,12 +545,12 @@ function hideHotbarTip(b){hotbarTip.hidden=true;b.removeAttribute('aria-describe
 let hotbarStamp='';player.selectedTool=null;
 
 function selectSlot(name){player.selectedTool=name&&player.materials[name]>0?name:null;mining.cancel();hotbarStamp='';refreshHotbar();}
-function refreshHotbar(){const stamp=[world.waking,session.started,inventoryRevision,player.selectedTool].join(":");if(stamp===hotbarStamp)return;hotbarStamp=stamp;const slots=hotbarOrder.filter(k=>player.materials[k]>0);hotbar.hidden=!session.started;hotbar.style.display=hotbar.hidden?'none':'flex';if(player.selectedTool&&!slots.includes(player.selectedTool))player.selectedTool=null;
+function refreshHotbar(){if(loadoutDrag?.active)return;const stamp=[world.waking,session.started,inventoryRevision,layoutRevision,player.selectedTool].join(":");if(stamp===hotbarStamp)return;hotbarStamp=stamp;const slots=loadoutSlots('bar').map(k=>player.materials[k]>0?k:null);hotbar.hidden=!session.started;hotbar.style.display=hotbar.hidden?'none':'flex';if(player.selectedTool&&!slots.includes(player.selectedTool))player.selectedTool=null;
 if(hotbarSelection!==player.selectedTool){hotbarSelection=player.selectedTool;showHotbarName();}
-hotbarTip.hidden=true;hotbar.replaceChildren();[null,...slots].forEach((name,i)=>{const b=document.createElement('button');b.textContent='';const key=document.createElement('small'),count=document.createElement('strong');key.className='slot-key';key.textContent=i<=9?i:'↕';count.className='slot-count';count.textContent=name?player.materials[name]:'';b.append(key,count);b.insertAdjacentHTML('afterbegin',itemIcon(name,28));b.onpointerenter=()=>showHotbarTip(b,name);b.onpointerleave=()=>hideHotbarTip(b);
-b.onfocus=()=>showHotbarTip(b,name);b.onblur=()=>hideHotbarTip(b);b.setAttribute('aria-label',(name||'Bare hands')+(name?': '+player.materials[name]:''));b.setAttribute('aria-pressed',String(player.selectedTool===name));b.style.cssText='width:53px;min-height:54px;overflow-wrap:anywhere;font:10px Georgia;color:#ead9c7;border-radius:8px;border:1px solid '+(player.selectedTool===name?'#ebd1a5':'#99857c55')+';background:#373344';b.onclick=()=>selectSlot(name);hotbar.append(b);});}
-addEventListener('keydown',e=>{if(!session.started||!world.waking||e.target.matches?.('input,textarea,[contenteditable="true"]'))return;if(/^Digit[0-9]$/.test(e.code)){e.preventDefault();const i=Number(e.code.slice(-1));selectSlot(i?hotbarOrder.filter(k=>player.materials[k]>0)[i-1]:null);}});
-renderer.domElement.addEventListener('wheel',e=>{if(!world.waking||document.pointerLockElement!==renderer.domElement)return;e.preventDefault();const list=[null,...hotbarOrder.filter(k=>player.materials[k]>0)];selectSlot(list[(list.indexOf(player.selectedTool)+(e.deltaY>0?1:list.length-1))%list.length]);},{passive:false});
+hotbarTip.hidden=true;hotbar.replaceChildren();[null,...slots].forEach((name,i)=>{const b=document.createElement('button');if(i)markLoadoutSlot(b,'bar',i-1,name);b.textContent='';const key=document.createElement('small'),count=document.createElement('strong');key.className='slot-key';key.textContent=i<=9?i:'↕';count.className='slot-count';count.textContent=name?player.materials[name]:'';b.append(key,count);if(name||!i)b.insertAdjacentHTML('afterbegin',itemIcon(name,28));b.onpointerenter=()=>showHotbarTip(b,name);b.onpointerleave=()=>hideHotbarTip(b);
+b.onfocus=()=>showHotbarTip(b,name);b.onblur=()=>hideHotbarTip(b);b.setAttribute('aria-label',(name|| (i?'Empty slot':'Bare hands'))+(name?': '+player.materials[name]:''));b.setAttribute('aria-pressed',String(player.selectedTool===name&&(!!name||!i)));b.style.cssText='width:53px;min-height:54px;overflow-wrap:anywhere;font:10px Georgia;color:#ead9c7;border-radius:8px;border:1px solid '+(player.selectedTool===name?'#ebd1a5':'#99857c55')+';background:#373344';b.onclick=()=>selectSlot(name);hotbar.append(b);});}
+addEventListener('keydown',e=>{if(!session.started||!world.waking||e.target.matches?.('input,textarea,[contenteditable="true"]'))return;if(/^Digit[0-9]$/.test(e.code)){e.preventDefault();const i=Number(e.code.slice(-1));selectSlot(i?loadoutSlots('bar')[i-1]:null);}});
+renderer.domElement.addEventListener('wheel',e=>{if(!world.waking||document.pointerLockElement!==renderer.domElement)return;e.preventDefault();const list=[null,...loadoutSlots('bar').filter(k=>player.materials[k]>0)];selectSlot(list[(list.indexOf(player.selectedTool)+(e.deltaY>0?1:list.length-1))%list.length]);},{passive:false});
 const hotbarHUD=updateHUD;updateHUD=function(dt){hotbarHUD(dt);refreshHotbar();};window.grin.hotbar={select:selectSlot,refresh:refreshHotbar,order:hotbarOrder,element:hotbar};
 
 // Stage Ten 2 — code-painted matte miniatures; no external images.
