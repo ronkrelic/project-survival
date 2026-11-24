@@ -745,7 +745,7 @@ function updateWeatherPool(pool,time,fade){
 }
 
 const islandSky=updateSky;
-function tickRhythm(dt){if(!world.waking){clockReadout.hidden=true;nightStars.visible=false;skyDress.visible=false;return;}clockReadout.hidden=false;nightStars.visible=true;if(session.started&&Number.isFinite(dt)&&dt>0){rhythm.seconds+=dt;while(rhythm.seconds>=DAY_SECONDS){rhythm.seconds-=DAY_SECONDS;rhythm.day++;saveGame();}}const s=rhythm.seconds,night=s>=600;const light=s<60?.35+.65*s/60:s<540?1:s<600?1-.74*(s-540)/60:s<780?.26:.26+.09*(s-780)/60;world.waterUniforms.waterTime.value=(rhythm.day-1)*DAY_SECONDS+s;world.waterUniforms.waterNight.value=1-light;phase.value=light;phase.name=s<60?'Dawn':s<540?'Daylight':s<600?'Dusk':s<780?'Night':'Dawn';sky.material.uniforms.progress.value=light;fogBase.copy(nightFog).lerp(dawnFog,light);if(world.material.userData.shader){world.material.userData.shader.uniforms.phaseLight.value=light;world.material.userData.shader.uniforms.firstFire.value=0;world.material.userData.shader.uniforms.wakingNight.value=1-light;}nightStars.position.copy(camera.position);updateSkyDressing(s);wakingFireLight.intensity=1+(1-light)*2;wakingFlame.material.opacity=.7+(1-light)*.25;const minutes=Math.floor(s<600?360+s/600*720:1080+(s-600)/240*720)%1440;clockReadout.textContent='Day '+rhythm.day+' · '+String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0')+' · '+phase.name;if(session.started&&player.awake&&s>=540&&s<780&&!arcFor().firstDusk){
+function tickRhythm(dt){if(!world.waking){if(net.mode==='host'&&session.started&&net.people.size&&[...net.people.values()].some(p=>p.realm==='waking')&&Number.isFinite(dt)&&dt>0)advanceSharedClock(dt);clockReadout.hidden=true;nightStars.visible=false;skyDress.visible=false;return;}clockReadout.hidden=false;nightStars.visible=true;if(session.started&&Number.isFinite(dt)&&dt>0){advanceSharedClock(dt);}const s=rhythm.seconds,night=s>=600;const light=s<60?.35+.65*s/60:s<540?1:s<600?1-.74*(s-540)/60:s<780?.26:.26+.09*(s-780)/60;world.waterUniforms.waterTime.value=(rhythm.day-1)*DAY_SECONDS+s;world.waterUniforms.waterNight.value=1-light;phase.value=light;phase.name=s<60?'Dawn':s<540?'Daylight':s<600?'Dusk':s<780?'Night':'Dawn';sky.material.uniforms.progress.value=light;fogBase.copy(nightFog).lerp(dawnFog,light);if(world.material.userData.shader){world.material.userData.shader.uniforms.phaseLight.value=light;world.material.userData.shader.uniforms.firstFire.value=0;world.material.userData.shader.uniforms.wakingNight.value=1-light;}nightStars.position.copy(camera.position);updateSkyDressing(s);wakingFireLight.intensity=1+(1-light)*2;wakingFlame.material.opacity=.7+(1-light)*.25;const minutes=Math.floor(s<600?360+s/600*720:1080+(s-600)/240*720)%1440;clockReadout.textContent='Day '+rhythm.day+' · '+String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0')+' · '+phase.name;if(session.started&&player.awake&&s>=540&&s<780&&!arcFor().firstDusk){
 arcFor().firstDusk=true;recordMoment('firstDusk');
 guide.say('first-dusk',"The sun is setting. Your first dusk out here. The dark isn't empty, you know that now. Light something warm, and I'll keep watch with you.");
 saveGame();
@@ -1140,4 +1140,35 @@ const comfortLoad=loadPersonal;loadPersonal=function(s,position=false){
 refreshOutfit();window.grin.saving.personalSnapshot=personalSnapshot;
 window.grin.comfort={state:comfort,constants:WARMTH,garments:GARMENTS,wear:wearGarment,remove:removeGarment,get worn(){return {...worn};}};
 window.grin.moments={record:recordMoment,get records(){return moments.map(m=>({...m}));}};
+window.grin.netValidation.guest=m=>guestMessage(m);
+
+// Stage Fourteen, batch two: a small host anchor; ordinary drift never reverses time.
+const clockSync={anchor:null,received:0,sent:0};
+function clockCorrection(error,dt){
+ if(Math.abs(error)>=8)return {snap:true,advance:error};
+ return {snap:false,advance:dt*Math.max(-.1,Math.min(.1,error*.2))};
+}
+function advanceSharedClock(dt){
+ let step=dt;
+ if(net.mode==='guest'&&clockSync.anchor!==null){
+  const local=(rhythm.day-1)*DAY_SECONDS+rhythm.seconds;
+  const target=clockSync.anchor+(performance.now()-clockSync.received)/1000;
+  const correction=clockCorrection(target-local,dt);
+  if(correction.snap){const total=Math.max(0,target);rhythm.day=1+Math.floor(total/DAY_SECONDS);rhythm.seconds=total%DAY_SECONDS;return;}
+  step+=correction.advance;
+ }
+ rhythm.seconds+=step;
+ while(rhythm.seconds>=DAY_SECONDS){rhythm.seconds-=DAY_SECONDS;rhythm.day++;saveGame();}
+}
+function acceptClock(clock,initial=false){
+ if(!clock||!bounded(clock.seconds,0,DAY_SECONDS)||!Number.isSafeInteger(clock.day)||clock.day<1)return;
+ clockSync.anchor=(clock.day-1)*DAY_SECONDS+clock.seconds;clockSync.received=performance.now();
+ if(initial){rhythm.seconds=clock.seconds;rhythm.day=clock.day;}
+}
+const syncGuest=guestMessage;guestMessage=function(m){
+ if(m?.type==='clock-sync'){if(net.mode==='guest')acceptClock(m.clock);return;}
+ if(m?.type==='welcome')acceptClock(m.clock,true);
+ syncGuest(m);
+};
+setInterval(()=>{if(net.mode==='host'&&net.ready&&session.started)broadcast({type:'clock-sync',clock:{seconds:rhythm.seconds,day:rhythm.day}});},2000);
 window.grin.netValidation.guest=m=>guestMessage(m);
