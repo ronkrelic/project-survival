@@ -863,3 +863,95 @@ hostMessage=function(c,m){
  }
  beforeDoorHost(c,m);
 };
+// Stage Thirteen, Batch One: ephemeral, host-umpired ambient life. Never ledger data.
+const foragers=new Map(),foragerModels=new Map();
+let foragerSerial=0,foragerSpawn=0,foragerSend=0,foragerAge=0,foragerClock=0,foragerMode=net.mode;
+function foragerGround(x,z){
+ const ix=Math.floor(x),iz=Math.floor(z),h=wakingHeight(ix,iz,seed);
+ const cell=y=>cellValue({realm:'waking',x:ix,y,z:iz});
+ // Grass only, open air, no water, crops, constructions or overhangs.
+ if(![1,11].includes(cell(h)))return null;
+ for(let y=h+1;y<=Math.min(111,h+8);y++)if(cell(y))return null;
+ return h+1;
+}
+function makeForager(){
+ const body=new THREE.Group(),head=new THREE.Group(),legs=[];
+ const part=(parent,w,h,d,color,x,y,z)=>{const m=beveledVoxel(w,h,d,color);m.position.set(x,y,z);parent.add(m);return m;};
+ part(body,.38,.26,.52,0xd49b54,0,.28,0);
+ part(body,.31,.16,.40,0xeadcc5,0,.20,-.01);
+ head.position.set(0,.36,.25);body.add(head);
+ part(head,.29,.26,.27,0xf7ecd7,0,0,0);
+ part(head,.18,.10,.16,0xd9c59b,0,-.07,.17);
+ for(const side of [-1,1]){
+  const ear=part(head,.08,.18,.09,0xaa9475,side*.13,.18,-.03);ear.rotation.z=-side*.25;
+  part(head,.035,.045,.025,0x514c49,side*.115,.025,.15);
+  for(const z of [-.16,.16])legs.push(part(body,.075,.13,.09,0xaa9475,side*.13,.08,z));
+ }
+ part(head,.05,.035,.035,0x514c49,0,-.07,.26);
+ const tail=part(body,.16,.14,.18,0xeadcc5,0,.34,-.32);tail.rotation.x=.4;
+ scene.add(body);return {body,head,legs,clock:0};
+}
+function clearForagerModel(id){const a=foragerModels.get(id);if(!a)return;scene.remove(a.body);a.body.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});foragerModels.delete(id);}
+const foragerGuestMessage=guestMessage;
+guestMessage=function(m){
+ if(m?.type==='foragers'){
+  if(net.mode!=='guest'||!Array.isArray(m.items)||m.items.length>16)return;
+  if(!m.items.every(p=>Number.isSafeInteger(p.id)&&p.id>0&&[p.x,p.y,p.z,p.yaw].every(Number.isFinite)&&Math.abs(p.x)<100000&&Math.abs(p.z)<100000&&p.y>=0&&p.y<112&&typeof p.forage==='boolean'))return;
+  foragers.clear();for(const p of m.items)foragers.set(p.id,{...p});foragerAge=0;return;
+ }
+ foragerGuestMessage(m);
+};
+function tickForagers(dt){
+ if(foragerMode!==net.mode){foragers.clear();foragerMode=net.mode;foragerSpawn=0;}
+ foragerAge+=dt;
+ if(net.mode!=='guest'){
+  const people=session.started?[ownState(),...net.people.values()].filter(p=>validState(p)&&p.realm==='waking'):[];
+  // Keep the host's wildlife clock alive while visiting friends remain on the mainland.
+  foragerClock=world.waking?rhythm.seconds:(foragerClock+dt)%840;
+  const active=session.started&&(foragerClock<600||foragerClock>=780);
+  const distance=(c,p)=>Math.hypot(c.x-p.x,c.z-p.z);
+  for(const [id,c] of foragers)if(!active||!people.length||people.every(p=>distance(c,p)>64)||foragerGround(c.x,c.z)===null)foragers.delete(id);
+  foragerSpawn-=dt;
+  if(active&&people.length&&foragerSpawn<=0){
+   foragerSpawn=2;
+   for(const p of people){
+    if([...foragers.values()].filter(c=>distance(c,p)<64).length>=3||foragers.size>=12)continue;
+    for(let attempt=0;attempt<24;attempt++){
+     const a=Math.random()*Math.PI*2,r=41+Math.random()*7,x=p.x+Math.cos(a)*r,z=p.z+Math.sin(a)*r,y=foragerGround(x,z);
+     if(y===null||people.some(q=>Math.hypot(x-q.x,z-q.z)<40))continue;
+     const id=++foragerSerial;foragers.set(id,{id,x,y,z,yaw:a,forage:false,wait:1,travel:0});break;
+    }
+   }
+  }
+  for(const c of foragers.values()){
+   const nearest=people.reduce((a,p)=>!a||distance(c,p)<distance(c,a)?p:a,null),d=distance(c,nearest);
+   let speed=0;
+   if(d<3){c.yaw=Math.atan2(c.x-nearest.x,c.z-nearest.z);c.travel=d<1.4?1.8:.8;c.wait=1.5;c.forage=false;speed=d<1.4?3:1.35;}
+   else if(c.travel>0){c.travel-=dt;speed=.55;c.forage=false;}
+   else if((c.wait-=dt)<=0){
+    const yaw=Math.random()*Math.PI*2;
+    // Do not choose a wandering heading toward any nearby player.
+    if(!people.some(p=>distance(c,p)<10&&(p.x-c.x)*Math.sin(yaw)+(p.z-c.z)*Math.cos(yaw)>0)){c.yaw=yaw;c.travel=1+Math.random()*3;}
+    c.wait=2+Math.random()*4;c.forage=true;
+   }
+   if(speed){
+    const nx=c.x+Math.sin(c.yaw)*speed*dt,nz=c.z+Math.cos(c.yaw)*speed*dt;
+    // Check the footprint as well as its centre, never step up a cliff or through a wall.
+    const heights=[[-.23,-.3],[.23,-.3],[-.23,.3],[.23,.3],[0,0]].map(([x,z])=>foragerGround(nx+x,nz+z));
+    if(heights.every(y=>y!==null&&Math.abs(y-c.y)<=1)&&Math.max(...heights)-Math.min(...heights)<=1){c.x=nx;c.z=nz;c.y=Math.max(...heights);}else{c.travel=0;c.wait=1;c.forage=false;}
+   }
+  }
+  foragerSend+=dt;if(net.mode==='host'&&foragerSend>=.25){foragerSend=0;broadcast({type:'foragers',items:[...foragers.values()].map(({id,x,y,z,yaw,forage})=>({id,x,y,z,yaw,forage}))});}
+ }else if(!net.ready||foragerAge>3)foragers.clear();
+ for(const id of foragerModels.keys())if(!foragers.has(id))clearForagerModel(id);
+ for(const [id,c] of foragers){
+  let a=foragerModels.get(id);if(!a){a=makeForager();a.body.position.set(c.x,c.y,c.z);foragerModels.set(id,a);}
+  a.body.visible=session.started&&world.waking&&!crossing.veil;
+  const moving=Math.hypot(a.body.position.x-c.x,a.body.position.z-c.z)>.015,t=1-Math.exp(-10*dt);
+  a.body.position.lerp(new THREE.Vector3(c.x,c.y,c.z),t);
+  a.body.rotation.y+=Math.atan2(Math.sin(c.yaw-a.body.rotation.y),Math.cos(c.yaw-a.body.rotation.y))*t;
+  a.clock+=dt*(moving?10:2);a.head.rotation.x=c.forage?.4+Math.sin(a.clock)*.04:0;
+  a.legs.forEach((leg,i)=>{leg.rotation.x=moving?Math.sin(a.clock+(i%3?Math.PI:0))*.3:0;});
+ }
+}
+const foragerSky=updateSky;updateSky=function(dt){foragerSky(dt);tickForagers(dt);};
