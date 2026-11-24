@@ -16,6 +16,7 @@ export const materials=Object.freeze({
  16:{name:'dryfiber tuft',yield:'dryfiber',seconds:.4,color:0x97aa83},
  10:{name:'sparkstone',yield:'sparkstone',seconds:1.5,color:0xe3dfb9},
  17:{name:'tilled earth',yield:'earth',seconds:.4,color:0x69574d},
+ 21:{name:'fence',yield:'fence',seconds:.6,color:0xad8c70},
  20:{name:'lantern',yield:'lantern',seconds:.4,color:0xe3dfb9},
  19:{name:'constructed earth',yield:'earth',seconds:.4,color:0x9b7c6c},
  18:{name:'hearthglow ore',yield:'hearthglow ore',seconds:2.4,color:0x9bb8ae},

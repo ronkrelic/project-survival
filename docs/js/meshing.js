@@ -9,7 +9,7 @@ const faces=[
  {n:[0,0,-1],v:[[0,0,0],[0,1,0],[1,1,0],[1,0,0]],shade:.7}
 ];
 // Linear-ish matte palette: sage teal, ochre, rose, basalt, bark, muted foliage.
-const palette=[[0,0,0],[.30,.52,.43],[.57,.36,.22],[.54,.30,.29],[.075,.09,.12],[.26,.20,.17],[.25,.40,.32],[.18,.85,.78],[.64,.38,.88],[.25,.16,.17],[.78,.76,.55],[.16,.34,.27],[.58,.28,.20],[.57,.61,.60],[.77,.85,.87],[.65,.47,.25],[.37,.49,.29],[.20,.15,.12],[.42,.65,.57],[.33,.23,.18],[.78,.76,.55]];
+const palette=[[0,0,0],[.30,.52,.43],[.57,.36,.22],[.54,.30,.29],[.075,.09,.12],[.26,.20,.17],[.25,.40,.32],[.18,.85,.78],[.64,.38,.88],[.25,.16,.17],[.78,.76,.55],[.16,.34,.27],[.58,.28,.20],[.57,.61,.60],[.77,.85,.87],[.65,.47,.25],[.37,.49,.29],[.20,.15,.12],[.42,.65,.57],[.33,.23,.18],[.78,.76,.55],[.46,.32,.23]];
 export function mesh(chunk,seed) {
  const {cx,cz,blocks,light}=chunk,positions=[],colors=[];
  const at=(x,y,z)=>y<0?2:y>=HEIGHT?0:(x>=0&&z>=0&&x<SIZE&&z<SIZE?blocks[index(x,y,z)]:(chunk.halo?.[`${x},${y},${z}`]??(chunk.waking?wakingVoxel:voxelAt)(cx*SIZE+x,y,cz*SIZE+z,seed)));
@@ -17,8 +17,13 @@ export function mesh(chunk,seed) {
   const i=index(x,y,z),id=blocks[i];if(!id)continue;
   const band=id===9?(y%2?.72:1.08):1;
   const tint=band*(.94+hash(cx*SIZE+x,cz*SIZE+z,seed+id)*.10);
+  if(id===21){
+   const boxes=[[.40,0,.40,.60,.95,.60],[0,.30,.44,1,.43,.56],[0,.65,.44,1,.78,.56]];
+   for(const b of boxes)for(const f of faces)for(const k of [0,1,2,0,2,3]){const v=f.v[k];positions.push(cx*SIZE+x+b[0]+v[0]*(b[3]-b[0]),y+b[1]+v[1]*(b[4]-b[1]),cz*SIZE+z+b[2]+v[2]*(b[5]-b[2]));for(const c of palette[id])colors.push(c*f.shade*tint*(.82+.18*light[i]/15));}
+   continue;
+  }
   for(const f of faces) {
-   const [nx,ny,nz]=f.n;if(at(x+nx,y+ny,z+nz))continue;
+   const [nx,ny,nz]=f.n;const neighbor=at(x+nx,y+ny,z+nz);if(neighbor&&neighbor!==21)continue;
    const axes=[0,1,2].filter(a=>f.n[a]===0),p=[x,y,z];
    const shades=f.v.map(v=>{
     const a=[...p],b=[...p],c=[...p];

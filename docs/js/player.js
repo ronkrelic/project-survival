@@ -32,6 +32,8 @@ export class Player {
  move(dx,dz) {
   const x=this.x+dx,z=this.z+dz;
   if(this.clear(x,this.y,z)){this.x=x;this.z=z;return;}
+  // Barriers must not be climbed by the terrain's automatic whole-cell step.
+  for(let ix=Math.floor(x-.27);ix<=Math.floor(x+.27);ix++)for(let iz=Math.floor(z-.27);iz<=Math.floor(z+.27);iz++)for(let iy=Math.floor(this.y+.001);iy<=Math.floor(this.y+1.799);iy++)if(this.world.block(ix,iy,iz)===21)return;
   // Step one whole voxel only with grounded feet and head clearance.
   if(this.grounded&&this.clear(this.x,this.y+1,this.z)&&this.clear(x,this.y+1,z)){
    this.x=x;this.z=z;this.y+=1;this.vy=0;
