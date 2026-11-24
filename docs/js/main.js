@@ -664,8 +664,45 @@ function updateSkyDressing(s){
  for(let i=0;i<skyClouds.length;i++){const c=skyClouds[i],a=c.angle+time*(.00045+i*.000025);c.group.position.set(Math.cos(a)*c.radius,c.height,Math.sin(a)*c.radius);c.material.color.copy(cloudDay).lerp(cloudNight,night).lerp(cloudDusk,rose*.7);}
 }
 
+// Stage Thirteen: atmosphere only. Weather has no persistence or network messages.
+// One 180-240 second shower in each 1680-second window, with 15-second fades.
+function showerStrength(time){
+ const window=Math.floor(time/1680),local=time-window*1680;
+ const start=180+hash(window,301,seed)*600,duration=180+hash(window,302,seed)*60;
+ const edge=Math.max(0,Math.min(1,(local-start)/15,(start+duration-local)/15));
+ return edge*edge*(3-2*edge);
+}
+function weatherPool(count,snow){
+ const positions=new Float32Array(count*3),floors=new Float32Array(count),phases=new Float32Array(count);
+ for(let i=0;i<count;i++){positions[i*3]=hash(i,311,seed)*32;positions[i*3+2]=hash(i,312,seed)*32;phases[i]=hash(i,313,seed)*20;}
+ const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));geometry.setAttribute('floorY',new THREE.BufferAttribute(floors,1));geometry.setAttribute('fallPhase',new THREE.BufferAttribute(phases,1));
+ const material=new THREE.ShaderMaterial({transparent:true,depthWrite:false,depthTest:true,uniforms:{clock:{value:0},fade:{value:0},base:{value:new THREE.Vector3()},pixels:{value:renderer.getPixelRatio()}},vertexShader:`attribute float floorY;attribute float fallPhase;uniform float clock;uniform vec3 base;uniform float pixels;varying float alive;void main(){vec3 p=position+base;float fall=mod(fallPhase-clock*6.,20.);p.y=base.y+fall;alive=smoothstep(floorY+.15,floorY+.7,p.y)*smoothstep(0.,2.,fall)*(1.-smoothstep(18.,20.,fall));vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=clamp(65./max(1.,-mv.z),2.,6.)*pixels;}`,fragmentShader:`uniform float fade;varying float alive;void main(){vec2 q=gl_PointCoord-.5;float a=(1.-smoothstep(.06,.18,abs(q.x)))*(1.-smoothstep(.2,.5,abs(q.y)));gl_FragColor=vec4(.72,.79,.85,a*fade*alive*.32);}`});
+ const mesh=new THREE.Points(geometry,material);mesh.frustumCulled=false;mesh.visible=false;scene.add(mesh);
+ return {mesh,positions,floors,x:NaN,z:NaN};
+}
+const rainWeather=weatherPool(160,false);
+let weatherSample=0,weatherFrost=false;
+function updateWeather(s){
+ const time=(rhythm.day-1)*DAY_SECONDS+s;
+ rainWeather.mesh.visible=false;if(!world.waking)return;
+ // Biome and terrain sampling are cached, never performed in the particle loop each frame.
+ if(time<weatherSample||time>=weatherSample+.5){weatherSample=time;weatherFrost=biomeAt(player.x,player.z,seed)==='Frost Peaks';}
+ const rain=weatherFrost?0:showerStrength(time);
+ if(rain>0)updateWeatherPool(rainWeather,time,rain);
+ for(let i=0;i<skyClouds.length;i++)skyClouds[i].material.color.multiplyScalar(1-rain*.12);
+}
+function updateWeatherPool(pool,time,fade){
+ const x=Math.floor(player.x/8)*8-16,z=Math.floor(player.z/8)*8-16;
+ if(x!==pool.x||z!==pool.z){
+  pool.x=x;pool.z=z;
+  for(let i=0;i<pool.floors.length;i++)pool.floors[i]=wakingHeight(Math.floor(x+pool.positions[i*3]),Math.floor(z+pool.positions[i*3+2]),seed)+1;
+  pool.mesh.geometry.attributes.floorY.needsUpdate=true;
+ }
+ const u=pool.mesh.material.uniforms;u.clock.value=time;u.fade.value=fade;u.base.value.set(x,player.y-8,z);u.pixels.value=renderer.getPixelRatio();pool.mesh.visible=true;
+}
+
 const islandSky=updateSky;
-function tickRhythm(dt){if(!world.waking){clockReadout.hidden=true;nightStars.visible=false;skyDress.visible=false;return;}clockReadout.hidden=false;nightStars.visible=true;if(session.started&&Number.isFinite(dt)&&dt>0){rhythm.seconds+=dt;while(rhythm.seconds>=DAY_SECONDS){rhythm.seconds-=DAY_SECONDS;rhythm.day++;saveGame();}}const s=rhythm.seconds,night=s>=600;const light=s<60?.35+.65*s/60:s<540?1:s<600?1-.74*(s-540)/60:s<780?.26:.26+.09*(s-780)/60;phase.value=light;phase.name=s<60?'Dawn':s<540?'Daylight':s<600?'Dusk':s<780?'Night':'Dawn';sky.material.uniforms.progress.value=light;fogBase.copy(nightFog).lerp(dawnFog,light);if(world.material.userData.shader){world.material.userData.shader.uniforms.phaseLight.value=light;world.material.userData.shader.uniforms.firstFire.value=0;world.material.userData.shader.uniforms.wakingNight.value=1-light;}nightStars.position.copy(camera.position);updateSkyDressing(s);aurora.visible=light<.8;aurora.position.set(player.x,player.y+48,player.z-65);aurora.userData.wakingClock=(aurora.userData.wakingClock||0)+(Number.isFinite(dt)?Math.max(0,dt):0);aurora.children.forEach((r,i)=>{r.material.opacity=.12*(1-light);const p=r.geometry.attributes.position;for(let j=0;j<p.count;j++)p.setZ(j,Math.sin(p.getX(j)*.16+aurora.userData.wakingClock*.22+i+p.getY(j)*.06)*2.7);p.needsUpdate=true;});wakingFireLight.intensity=1+(1-light)*2;wakingFlame.material.opacity=.7+(1-light)*.25;const minutes=Math.floor(s<600?360+s/600*720:1080+(s-600)/240*720)%1440;clockReadout.textContent='Day '+rhythm.day+' · '+String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0')+' · '+phase.name;if(session.started&&player.awake&&s>=540&&s<780&&!arcFor().firstDusk){
+function tickRhythm(dt){if(!world.waking){clockReadout.hidden=true;nightStars.visible=false;skyDress.visible=false;return;}clockReadout.hidden=false;nightStars.visible=true;if(session.started&&Number.isFinite(dt)&&dt>0){rhythm.seconds+=dt;while(rhythm.seconds>=DAY_SECONDS){rhythm.seconds-=DAY_SECONDS;rhythm.day++;saveGame();}}const s=rhythm.seconds,night=s>=600;const light=s<60?.35+.65*s/60:s<540?1:s<600?1-.74*(s-540)/60:s<780?.26:.26+.09*(s-780)/60;phase.value=light;phase.name=s<60?'Dawn':s<540?'Daylight':s<600?'Dusk':s<780?'Night':'Dawn';sky.material.uniforms.progress.value=light;fogBase.copy(nightFog).lerp(dawnFog,light);if(world.material.userData.shader){world.material.userData.shader.uniforms.phaseLight.value=light;world.material.userData.shader.uniforms.firstFire.value=0;world.material.userData.shader.uniforms.wakingNight.value=1-light;}nightStars.position.copy(camera.position);updateSkyDressing(s);updateWeather(s);aurora.visible=light<.8;aurora.position.set(player.x,player.y+48,player.z-65);aurora.userData.wakingClock=(aurora.userData.wakingClock||0)+(Number.isFinite(dt)?Math.max(0,dt):0);aurora.children.forEach((r,i)=>{r.material.opacity=.12*(1-light);const p=r.geometry.attributes.position;for(let j=0;j<p.count;j++)p.setZ(j,Math.sin(p.getX(j)*.16+aurora.userData.wakingClock*.22+i+p.getY(j)*.06)*2.7);p.needsUpdate=true;});wakingFireLight.intensity=1+(1-light)*2;wakingFlame.material.opacity=.7+(1-light)*.25;const minutes=Math.floor(s<600?360+s/600*720:1080+(s-600)/240*720)%1440;clockReadout.textContent='Day '+rhythm.day+' · '+String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0')+' · '+phase.name;if(session.started&&player.awake&&s>=540&&s<780&&!arcFor().firstDusk){
 arcFor().firstDusk=true;
 guide.say('first-dusk',"The sun is setting. Your first dusk out here. The dark isn't empty, you know that now. Light something warm, and I'll keep watch with you.");
 saveGame();
