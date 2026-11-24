@@ -24,7 +24,7 @@ renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWid
 renderer.outputColorSpace=THREE.SRGBColorSpace;document.body.appendChild(renderer.domElement);renderer.domElement.style.visibility="hidden";
 document.body.style.background="#090d20";
 // Camera-centred dome, peach horizon to indigo zenith, with a broad low sun.
-const sky=new THREE.Mesh(new THREE.SphereGeometry(800,32,20),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:{},vertexShader:`varying vec3 ray;void main(){ray=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`varying vec3 ray;void main(){vec3 d=normalize(ray);float t=pow(max(d.y,0.),.48);vec3 c=mix(vec3(.92,.65,.54),vec3(.15,.18,.34),t);vec3 sun=normalize(vec3(.26,.075,-1.));float a=max(dot(d,sun),0.);c+=vec3(.18,.09,.035)*pow(a,60.)+vec3(.25,.16,.07)*pow(a,1600.);c=mix(vec3(.92,.71,.62),c,smoothstep(-.10,.16,d.y));gl_FragColor=vec4(c,1.);}` }));
+const sky=new THREE.Mesh(new THREE.SphereGeometry(800,32,20),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:{},vertexShader:`varying vec3 ray;void main(){ray=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`varying vec3 ray;void main(){vec3 d=normalize(ray);float t=pow(max(d.y,0.),.48);vec3 c=mix(vec3(.92,.65,.54),vec3(.15,.18,.34),t);vec3 sun=normalize(vec3(.26,.075,-1.));float a=max(dot(d,sun),0.);c=mix(vec3(.92,.71,.62),c,smoothstep(-.10,.16,d.y));gl_FragColor=vec4(c,1.);}` }));
 scene.add(sky);
 const world=new World(scene,seed);
 const player=new Player(camera,renderer.domElement,world,{x:.5,y:terrainHeight(0,0,seed)+1,z:.5});
@@ -620,9 +620,52 @@ let cookingNear=false;const cookHUD=updateHUD;updateHUD=function(dt){cookHUD(dt)
 
 // Stage Ten 7 — fourteen minutes: ten of daylight, four of soft night.
 const DAY_SECONDS=840,clockReadout=document.createElement('div');clockReadout.id='world-clock';clockReadout.style.cssText='position:fixed;right:20px;top:192px;padding:7px 12px;color:#d8c9b8;background:#292938cc;border:1px solid #99857c55;border-radius:10px;font:12px Georgia;z-index:12';document.body.append(clockReadout);
-const starPositions=[];for(let i=0;i<180;i++){const a=hash(i,41,seed)*Math.PI*2,y=.15+hash(i,42,seed)*.85,r=Math.sqrt(1-y*y);starPositions.push(Math.cos(a)*r*500,y*500,Math.sin(a)*r*500);}const starGeometry=new THREE.BufferGeometry();starGeometry.setAttribute('position',new THREE.Float32BufferAttribute(starPositions,3));const nightStars=new THREE.Points(starGeometry,new THREE.PointsMaterial({color:0xe4d6c7,size:1.5,transparent:true,opacity:0,depthWrite:false}));scene.add(nightStars);
+// Stage Thirteen: camera-centred sky dressing; only the shared clock and seed drive it.
+const skyDress=new THREE.Group();scene.add(skyDress);
+const discGeometry=new THREE.PlaneGeometry(1,1);
+function skyDisc(inner,outer,size){
+ const material=new THREE.ShaderMaterial({transparent:true,depthWrite:false,depthTest:true,fog:false,uniforms:{inner:{value:new THREE.Color(inner)},outer:{value:new THREE.Color(outer)},fade:{value:0}},vertexShader:`varying vec2 uvSky;void main(){uvSky=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`uniform vec3 inner;uniform vec3 outer;uniform float fade;varying vec2 uvSky;void main(){float r=length(uvSky-.5)*2.;float a=1.-smoothstep(.72,1.,r);gl_FragColor=vec4(mix(inner,outer,smoothstep(.1,.95,r)),a*fade);}`});
+ const mesh=new THREE.Mesh(discGeometry,material);mesh.scale.setScalar(size);mesh.renderOrder=-2;skyDress.add(mesh);return mesh;
+}
+const skySun=skyDisc(0xffe3a6,0xe99b78,38),skyMoon=skyDisc(0xe8e4d5,0x888fb5,27);
+const cloudDay=new THREE.Color(0xf1dfcc),cloudDusk=new THREE.Color(0xc48a9d),cloudNight=new THREE.Color(0x343951);
+const cloudGeometry=new THREE.IcosahedronGeometry(1,1);
+// Baked face tint gives unlit clouds the same matte, faceted softness as the blocks.
+const cloudTint=[];const cloudNormals=cloudGeometry.attributes.normal;
+for(let i=0;i<cloudNormals.count;i++){const v=.83+.17*Math.max(0,cloudNormals.getY(i));cloudTint.push(v,v,v);}
+cloudGeometry.setAttribute('color',new THREE.Float32BufferAttribute(cloudTint,3));
+const skyClouds=[];
+for(let i=0;i<6;i++){
+ const group=new THREE.Group(),material=new THREE.MeshBasicMaterial({color:0xf1dfcc,vertexColors:true,fog:false});
+ for(let j=0;j<4;j++){const puff=new THREE.Mesh(cloudGeometry,material);puff.position.set((j-1.5)*15,hash(i*4+j,82,seed)*7,hash(i*4+j,83,seed)*12);puff.scale.set(19,7+hash(i*4+j,84,seed)*5,12);group.add(puff);}
+ skyDress.add(group);skyClouds.push({group,material,angle:hash(i,85,seed)*Math.PI*2,height:95+hash(i,86,seed)*65,radius:330+hash(i,87,seed)*70});
+}
+const starPositions=[],starColors=[],starPhases=[];
+for(let i=0;i<36;i++){const a=hash(i,41,seed)*Math.PI*2,y=.2+hash(i,42,seed)*.8,r=Math.sqrt(1-y*y);starPositions.push(Math.cos(a)*r*500,y*500,Math.sin(a)*r*500);const teal=hash(i,43,seed);starColors.push(.72+teal*.12,.72+teal*.23,.9);starPhases.push(hash(i,44,seed)*Math.PI*2);}
+const starGeometry=new THREE.BufferGeometry();starGeometry.setAttribute('position',new THREE.Float32BufferAttribute(starPositions,3));starGeometry.setAttribute('color',new THREE.Float32BufferAttribute(starColors,3));starGeometry.setAttribute('shimmer',new THREE.Float32BufferAttribute(starPhases,1));
+const nightStars=new THREE.Points(starGeometry,new THREE.ShaderMaterial({transparent:true,depthWrite:false,fog:false,uniforms:{fade:{value:0},clock:{value:0},pixelRatio:{value:renderer.getPixelRatio()}},vertexShader:`attribute vec3 color;attribute float shimmer;uniform float clock;uniform float pixelRatio;varying vec3 tint;varying float glow;void main(){tint=color;glow=.76+.24*sin(clock*6.2831853/28.+shimmer);gl_PointSize=(3.+sin(shimmer))*pixelRatio;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`uniform float fade;varying vec3 tint;varying float glow;void main(){float r=length(gl_PointCoord-.5)*2.;gl_FragColor=vec4(tint,fade*glow*(1.-smoothstep(.15,1.,r)));}`}));scene.add(nightStars);
+function updateSkyDressing(s){
+ skyDress.visible=world.waking;if(!world.waking)return;
+ skyDress.position.copy(camera.position);
+ const sunUp=s<600||s>=780,sunAngle=((s+60)%840)/660*Math.PI,moonAngle=(s-600)/180*Math.PI;
+ skySun.visible=sunUp;skyMoon.visible=!sunUp;
+ skySun.position.set(-Math.cos(sunAngle)*590,Math.sin(sunAngle)*530,-180);
+ skyMoon.position.set(-Math.cos(moonAngle)*590,Math.sin(moonAngle)*530,-180);
+ skySun.quaternion.copy(camera.quaternion);skyMoon.quaternion.copy(camera.quaternion);
+ const sunFade=s>=780?Math.min(1,(s-780)/12):Math.min(1,(600-s)/12);
+ skySun.material.uniforms.fade.value=Math.max(0,sunFade);
+ skyMoon.material.uniforms.fade.value=Math.max(0,Math.min(1,(s-600)/12,(780-s)/12))*.88;
+ const stars=s<540?0:s<600?(s-540)/60:s<780?1:1-(s-780)/60;
+ nightStars.position.copy(camera.position);nightStars.material.uniforms.fade.value=stars*.8;nightStars.material.uniforms.clock.value=s;
+ nightStars.material.uniforms.pixelRatio.value=renderer.getPixelRatio();
+ const night=s>=600&&s<780?1:s>=780?1-(s-780)/60:s>=540?(s-540)/60:0;
+ const rose=s>=540&&s<600?Math.sin((s-540)/60*Math.PI):s>=780?Math.sin((s-780)/60*Math.PI)*.6:0;
+ const time=(rhythm.day-1)*840+s;
+ for(let i=0;i<skyClouds.length;i++){const c=skyClouds[i],a=c.angle+time*(.00045+i*.000025);c.group.position.set(Math.cos(a)*c.radius,c.height,Math.sin(a)*c.radius);c.material.color.copy(cloudDay).lerp(cloudNight,night).lerp(cloudDusk,rose*.7);}
+}
+
 const islandSky=updateSky;
-function tickRhythm(dt){if(!world.waking){clockReadout.hidden=true;nightStars.visible=false;return;}clockReadout.hidden=false;nightStars.visible=true;if(session.started&&Number.isFinite(dt)&&dt>0){rhythm.seconds+=dt;while(rhythm.seconds>=DAY_SECONDS){rhythm.seconds-=DAY_SECONDS;rhythm.day++;saveGame();}}const s=rhythm.seconds,night=s>=600;const light=s<60?.35+.65*s/60:s<540?1:s<600?1-.74*(s-540)/60:s<780?.26:.26+.09*(s-780)/60;phase.value=light;phase.name=s<60?'Dawn':s<540?'Daylight':s<600?'Dusk':s<780?'Night':'Dawn';sky.material.uniforms.progress.value=light;fogBase.copy(nightFog).lerp(dawnFog,light);if(world.material.userData.shader){world.material.userData.shader.uniforms.phaseLight.value=light;world.material.userData.shader.uniforms.firstFire.value=0;world.material.userData.shader.uniforms.wakingNight.value=1-light;}nightStars.position.copy(camera.position);nightStars.material.opacity=(1-light)*.8;aurora.visible=light<.8;aurora.position.set(player.x,player.y+48,player.z-65);aurora.userData.wakingClock=(aurora.userData.wakingClock||0)+(Number.isFinite(dt)?Math.max(0,dt):0);aurora.children.forEach((r,i)=>{r.material.opacity=.12*(1-light);const p=r.geometry.attributes.position;for(let j=0;j<p.count;j++)p.setZ(j,Math.sin(p.getX(j)*.16+aurora.userData.wakingClock*.22+i+p.getY(j)*.06)*2.7);p.needsUpdate=true;});wakingFireLight.intensity=1+(1-light)*2;wakingFlame.material.opacity=.7+(1-light)*.25;const minutes=Math.floor(s<600?360+s/600*720:1080+(s-600)/240*720)%1440;clockReadout.textContent='Day '+rhythm.day+' · '+String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0')+' · '+phase.name;if(session.started&&player.awake&&s>=540&&s<780&&!arcFor().firstDusk){
+function tickRhythm(dt){if(!world.waking){clockReadout.hidden=true;nightStars.visible=false;skyDress.visible=false;return;}clockReadout.hidden=false;nightStars.visible=true;if(session.started&&Number.isFinite(dt)&&dt>0){rhythm.seconds+=dt;while(rhythm.seconds>=DAY_SECONDS){rhythm.seconds-=DAY_SECONDS;rhythm.day++;saveGame();}}const s=rhythm.seconds,night=s>=600;const light=s<60?.35+.65*s/60:s<540?1:s<600?1-.74*(s-540)/60:s<780?.26:.26+.09*(s-780)/60;phase.value=light;phase.name=s<60?'Dawn':s<540?'Daylight':s<600?'Dusk':s<780?'Night':'Dawn';sky.material.uniforms.progress.value=light;fogBase.copy(nightFog).lerp(dawnFog,light);if(world.material.userData.shader){world.material.userData.shader.uniforms.phaseLight.value=light;world.material.userData.shader.uniforms.firstFire.value=0;world.material.userData.shader.uniforms.wakingNight.value=1-light;}nightStars.position.copy(camera.position);updateSkyDressing(s);aurora.visible=light<.8;aurora.position.set(player.x,player.y+48,player.z-65);aurora.userData.wakingClock=(aurora.userData.wakingClock||0)+(Number.isFinite(dt)?Math.max(0,dt):0);aurora.children.forEach((r,i)=>{r.material.opacity=.12*(1-light);const p=r.geometry.attributes.position;for(let j=0;j<p.count;j++)p.setZ(j,Math.sin(p.getX(j)*.16+aurora.userData.wakingClock*.22+i+p.getY(j)*.06)*2.7);p.needsUpdate=true;});wakingFireLight.intensity=1+(1-light)*2;wakingFlame.material.opacity=.7+(1-light)*.25;const minutes=Math.floor(s<600?360+s/600*720:1080+(s-600)/240*720)%1440;clockReadout.textContent='Day '+rhythm.day+' · '+String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0')+' · '+phase.name;if(session.started&&player.awake&&s>=540&&s<780&&!arcFor().firstDusk){
 arcFor().firstDusk=true;
 guide.say('first-dusk',"The sun is setting. Your first dusk out here. The dark isn't empty, you know that now. Light something warm, and I'll keep watch with you.");
 saveGame();
