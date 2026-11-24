@@ -6,16 +6,17 @@ export const musicConfig={
  themes:{island:'island-predawn',dawn:'first-dawn',night:'first-night',fallback:'sunlit-meadow'},
  biomes:{meadow:'sunlit-meadow',forest:'deep-forest','frost peaks':'frost-peaks',canyon:'canyon-dusk',desert:'canyon-dusk'},
  dawnPhase:'Dawn',
- // Priority: island, monolith, underground, dawn, night hearth, night, biome.
+ // Priority: visible aurora, island, underground, dawn, night hearth, night, biome.
  // Hearth uses the existing lit-hearth proximity test (five blocks).
- // Underground and monolith are placeholders: no certain cheap event signal.
- optional:{hearthside:{enabled:true,theme:'hearthside'},underfoot:{enabled:false,theme:'underfoot'},monolith:{enabled:false,theme:'monolith'}}
+ // Underground remains a placeholder; auroraVisible is the shared visual trigger.
+ optional:{hearthside:{enabled:true,theme:'hearthside'},underfoot:{enabled:false,theme:'underfoot'},monolith:{enabled:true,theme:'monolith'}}
 };
 export function createMusic(){return {
  config:musicConfig,context:null,bus:null,buffers:new Map(),voices:[],theme:null,request:0,state:{waking:false},
  unlock(context,bus){if(!this.context&&context&&bus){this.context=context;this.bus=bus;}},
- choose(s){const c=this.config,o=c.optional;if(!s.waking)return c.themes.island;
- if(o.monolith.enabled&&s.monolith)return o.monolith.theme;
+ choose(s){const c=this.config,o=c.optional;
+ if(o.monolith.enabled&&s.auroraVisible)return o.monolith.theme;
+ if(!s.waking)return c.themes.island;
  if(o.underfoot.enabled&&s.underground)return o.underfoot.theme;
  if(s.phase===c.dawnPhase)return c.themes.dawn;
  if(s.seconds>=c.nightStartSeconds)return o.hearthside.enabled&&s.nearHearth?o.hearthside.theme:c.themes.night;
