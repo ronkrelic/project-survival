@@ -269,7 +269,7 @@ function loadoutSlots(kind){
  const list=kind==='bag'?bagLayout:barLayout;
  const names=kind==='bag'?Object.keys(player.materials):hotbarOrder.filter(k=>player.materials[k]>0);
  const known=kind==='bag'?bagKnown:barKnown;
- for(const name of names)if(!known.has(name)){known.add(name);const empty=list.indexOf(null);if(empty<0)list.push(name);else list[empty]=name;}
+ for(const name of names)if(!known.has(name)){const empty=list.indexOf(null);if(kind==='bar'&&empty<0&&list.length>=14)continue;known.add(name);if(empty<0)list.push(name);else list[empty]=name;}
  while(list.length<(kind==='bag'?27:14))list.push(null);
  return list;
 }
@@ -544,7 +544,7 @@ b.setAttribute('aria-describedby','hotbar-tip');
 function hideHotbarTip(b){hotbarTip.hidden=true;b.removeAttribute('aria-describedby');}
 let hotbarStamp='';player.selectedTool=null;
 
-function selectSlot(name){player.selectedTool=name&&player.materials[name]>0?name:null;mining.cancel();hotbarStamp='';refreshHotbar();}
+function selectSlot(name){player.selectedTool=name&&player.materials[name]>0?name:null;if(player.selectedTool&&!loadoutSlots('bar').includes(name)){const empty=barLayout.indexOf(null);barLayout[empty<0?13:empty]=name;barKnown.add(name);layoutRevision++;}mining.cancel();hotbarStamp='';refreshHotbar();}
 function refreshHotbar(){if(loadoutDrag?.active)return;const stamp=[world.waking,session.started,inventoryRevision,layoutRevision,player.selectedTool].join(":");if(stamp===hotbarStamp)return;hotbarStamp=stamp;const slots=loadoutSlots('bar').map(k=>player.materials[k]>0?k:null);hotbar.hidden=!session.started;hotbar.style.display=hotbar.hidden?'none':'flex';if(player.selectedTool&&!slots.includes(player.selectedTool))player.selectedTool=null;
 if(hotbarSelection!==player.selectedTool){hotbarSelection=player.selectedTool;showHotbarName();}
 hotbarTip.hidden=true;hotbar.replaceChildren();[null,...slots].forEach((name,i)=>{const b=document.createElement('button');if(i)markLoadoutSlot(b,'bar',i-1,name);b.textContent='';const key=document.createElement('small'),count=document.createElement('strong');key.className='slot-key';key.textContent=i<=9?i:'↕';count.className='slot-count';count.textContent=name?player.materials[name]:'';b.append(key,count);if(name||!i)b.insertAdjacentHTML('afterbegin',itemIcon(name,28));b.onpointerenter=()=>showHotbarTip(b,name);b.onpointerleave=()=>hideHotbarTip(b);
