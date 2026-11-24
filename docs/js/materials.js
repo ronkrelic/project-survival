@@ -16,6 +16,7 @@ export const materials=Object.freeze({
  16:{name:'dryfiber tuft',yield:'dryfiber',seconds:.4,color:0x97aa83},
  10:{name:'sparkstone',yield:'sparkstone',seconds:1.5,color:0xe3dfb9},
  17:{name:'tilled earth',yield:'earth',seconds:.4,color:0x69574d},
+ 24:{name:'workbench',yield:'workbench',seconds:.9,color:0xad8c70},
  22:{name:'door-closed',yield:'door',seconds:.7,color:0xad8c70},
  23:{name:'door-open',yield:'door',seconds:.7,color:0xad8c70},
  21:{name:'fence',yield:'fence',seconds:.6,color:0xad8c70},
