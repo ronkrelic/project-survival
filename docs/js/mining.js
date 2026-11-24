@@ -6,7 +6,7 @@ export function targetBlock(world,origin,direction,reach=5){
  const step=d.map(Math.sign),delta=d.map(v=>v===0?Infinity:Math.abs(1/v));
  const next=d.map((v,i)=>v===0?Infinity:((v>0?p[i]+1:p[i])-o[i])/v);
  let distance=0;
- while(distance<=reach){const id=world.block(...p);if(id)return {x:p[0],y:p[1],z:p[2],id,distance};
+ while(distance<=reach){const id=world.block(...p);if(id&&id!==25)return {x:p[0],y:p[1],z:p[2],id,distance};
   const a=next.indexOf(Math.min(...next));distance=next[a];p[a]+=step[a];next[a]+=delta[a];
  }return null;
 }

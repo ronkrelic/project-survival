@@ -1,11 +1,11 @@
-import {isSolid} from './materials.js';
+import {isSolid,isWater} from './materials.js';
 // PC only: pointer lock, metres, 1.8m body and 1.6m standing eyes.
 export class Player {
  constructor(camera,canvas,world,spawn) {
   this.camera=camera;this.world=world;this.canvas=canvas;
   this.x=spawn.x;this.y=spawn.y;this.z=spawn.z;this.visualY=this.y;
   this.yaw=0;this.pitch=-.035;this.vy=0;this.grounded=true;
-  this.home={...spawn};this.lastShore={...spawn};this.mistCatch=null;this.mistStrength=0;
+  this.home={...spawn};this.lastShore={...spawn};this.lastSafeShore={...spawn};this.mistCatch=null;this.mistStrength=0;
   this.didJump=false;this.didSprint=false;
   this.stamina=1;this.sprintExhausted=false;this.sprinting=false;this.jumpQueued=false;
   this.keys=new Set();this.wake=0;this.awake=false;
@@ -36,7 +36,7 @@ export class Player {
   // Barriers must not be climbed by the terrain's automatic whole-cell step.
   for(let ix=Math.floor(x-.27);ix<=Math.floor(x+.27);ix++)for(let iz=Math.floor(z-.27);iz<=Math.floor(z+.27);iz++)for(let iy=Math.floor(this.y+.001);iy<=Math.floor(this.y+1.799);iy++)if([21,22].includes(this.world.block(ix,iy,iz)))return;
   // Step one whole voxel only with grounded feet and head clearance.
-  if(this.grounded&&this.clear(this.x,this.y+1,this.z)&&this.clear(x,this.y+1,z)){
+  if((this.grounded||this.immersion().torso)&&this.clear(this.x,this.y+1,this.z)&&this.clear(x,this.y+1,z)){
    this.x=x;this.z=z;this.y+=1;this.vy=0;
   }
  }
@@ -75,14 +75,44 @@ export class Player {
   this.mistStrength=Math.sin(Math.PI*c.t/1.65);
   if(c.t===1.65){Object.assign(this,b);this.vy=0;this.grounded=true;this.lastShore={...b};this.mistCatch=null;this.mistStrength=0;}
  }
+ // Loaded block samples only: an unloaded chunk is air, never imagined water.
+ immersion(){
+  const sample=dy=>isWater(this.world.block(Math.floor(this.x),Math.floor(this.y+dy),Math.floor(this.z)));
+  const feet=sample(.1),torso=sample(.9),head=sample(1.6);let surface=this.y;
+  if(feet||torso||head){let y=Math.floor(this.y+(head?1.6:torso?.9:.1));while(y<112&&isWater(this.world.block(Math.floor(this.x),y,Math.floor(this.z))))y++;surface=y;}
+  return {feet,torso,head,surface};
+ }
+ dryLanding(x,z){const p=this.landing(x,z);return p&&!isWater(this.world.block(Math.floor(x),Math.floor(p.y),Math.floor(z)))?p:null;}
+ waterVelocity(dt,rise=false){
+  const w=this.immersion();if(!w.feet&&!w.torso&&!w.head)return false;
+  const target=w.surface-(rise?.45:1.12);
+  this.vy=Math.max(-3,Math.min(rise?2.2:1.4,this.vy+((target-this.y)*12-this.vy*5)*dt));return true;
+ }
+ floatUncontrolled(dt,faint=false){
+  if(!this.immersion().feet&&!this.immersion().torso&&!this.immersion().head)return;
+  const n=Math.max(1,Math.ceil(dt/.012));
+  for(let i=0;i<n;i++){
+   this.waterVelocity(dt/n);
+   const next=this.y+this.vy*dt/n;if(this.clear(this.x,next,this.z))this.y=next;else this.vy=0;
+   if(faint){
+    const shore=this.lastSafeShore;
+    if(shore&&this.dryLanding(shore.x,shore.z)){
+     const dx=shore.x-this.x,dz=shore.z-this.z,d=Math.hypot(dx,dz)||1;
+     this.move(dx/d*.65*dt/n,dz/d*.65*dt/n);
+    }
+   }
+  }
+  this.visualY+=(this.y-this.visualY)*(1-Math.exp(-12*dt));
+  this.camera.position.set(this.x,this.visualY+1.6,this.z);
+ }
  update(dt) {
-  const locked=document.pointerLockElement===this.canvas;
+  const locked=document.pointerLockElement===this.canvas,wet=this.immersion();
   if(this.awake)this.wake=Math.min(1,this.wake+dt/2);
-  if(this.world.loaded&&!this.mistCatch&&(this.y<0||(!this.world.waking&&(Math.abs(this.x)>=128||Math.abs(this.z)>=(this.realmLimit||128)))||(!this.grounded&&!this.hasGround(this.x,this.z))))this.catchMist();
+  if(this.world.loaded&&!this.mistCatch&&(this.y<0||(!this.world.waking&&(Math.abs(this.x)>=128||Math.abs(this.z)>=(this.realmLimit||128)))||(!wet.feet&&!wet.torso&&!wet.head&&!this.grounded&&!this.hasGround(this.x,this.z))))this.catchMist();
   // Full reservoir: 100 points, 16/s drain, 12/s recovery; restart at 25.
   const moving=['KeyW','KeyA','KeyS','KeyD'].some(k=>this.keys.has(k));
   if(this.sprintExhausted&&this.stamina>=.25)this.sprintExhausted=false;
-  this.sprinting=locked&&this.wake===1&&!this.mistCatch&&moving&&!this.sprintExhausted&&(this.keys.has('ShiftLeft')||this.keys.has('ShiftRight'));
+  this.sprinting=!wet.torso&&!wet.head&&locked&&this.wake===1&&!this.mistCatch&&moving&&!this.sprintExhausted&&(this.keys.has('ShiftLeft')||this.keys.has('ShiftRight'));
   if(this.sprinting)this.didSprint=true;
   this.stamina=Math.max(0,Math.min(1,this.stamina+dt*(this.sprinting?-.16:.12)));
   if(this.stamina===0){this.sprintExhausted=true;this.sprinting=false;}
@@ -92,23 +122,24 @@ export class Player {
    let f=Number(this.keys.has('KeyW'))-Number(this.keys.has('KeyS'));
    let r=Number(this.keys.has('KeyD'))-Number(this.keys.has('KeyA'));
    const len=Math.hypot(f,r)||1;f/=len;r/=len;
-   const speed=this.sprinting?6.4:4;
+   const speed=(this.sprinting?6.4:4)*(wet.torso?.55:wet.feet?.72:1);
    const jump=this.jumpQueued;this.jumpQueued=false;
    const dx=(r*Math.cos(this.yaw)-f*Math.sin(this.yaw))*speed*dt;
    const dz=(-f*Math.cos(this.yaw)-r*Math.sin(this.yaw))*speed*dt;
    const n=Math.max(1,Math.ceil(dt/.012));
    for(let j=0;j<n;j++){
     this.grounded=!this.clear(this.x,this.y-.035,this.z);
-    if(j===0&&jump&&this.grounded){this.vy=6.6;this.grounded=false;this.didJump=true;}
-    if(this.grounded)this.lastShore={x:this.x,y:this.y,z:this.z};
+    if(j===0&&jump&&this.grounded&&!this.immersion().torso){this.vy=6.6;this.grounded=false;this.didJump=true;}
+    if(this.grounded){this.lastShore={x:this.x,y:this.y,z:this.z};if(!this.immersion().feet)this.lastSafeShore={...this.lastShore};}
     this.move(dx/n,0);this.move(0,dz/n);
-    if(!this.hasGround(this.x,this.z)){this.catchMist();break;}
-    this.vy=Math.max(-30,this.vy-18*dt/n);
+    if(!this.immersion().feet&&!this.immersion().torso&&!this.hasGround(this.x,this.z)){this.catchMist();break;}
+    if(!this.waterVelocity(dt/n,this.keys.has('Space')))this.vy=Math.max(-30,this.vy-18*dt/n);
     const next=this.y+this.vy*dt/n;
     if(this.clear(this.x,next,this.z)){this.y=next;this.grounded=false;}
     else {const falling=this.vy<=0;this.y=falling?Math.ceil(next-.001):Math.floor(next+1.799)-1.8;this.vy=0;this.grounded=falling;}
    }
   }
+  else if(!this.mistCatch)this.floatUncontrolled(dt);
   // Damped camera absorbs step-ups and landings; collision body stays exact.
   this.visualY+=(this.y-this.visualY)*(1-Math.exp(-12*dt));
   const rise=this.wake*this.wake*(3-2*this.wake);
