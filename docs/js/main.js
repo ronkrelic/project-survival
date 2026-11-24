@@ -621,7 +621,7 @@ let cookingNear=false;const cookHUD=updateHUD;updateHUD=function(dt){cookHUD(dt)
 // Stage Ten 7 — fourteen minutes: ten of daylight, four of soft night.
 const DAY_SECONDS=840,clockReadout=document.createElement('div');clockReadout.id='world-clock';clockReadout.style.cssText='position:fixed;right:20px;top:192px;padding:7px 12px;color:#d8c9b8;background:#292938cc;border:1px solid #99857c55;border-radius:10px;font:12px Georgia;z-index:12';document.body.append(clockReadout);
 // Stage Thirteen: camera-centred sky dressing; only the shared clock and seed drive it.
-const skyDress=new THREE.Group();scene.add(skyDress);
+const skyDress=new THREE.Group();skyDress.visible=false;scene.add(skyDress);
 const discGeometry=new THREE.PlaneGeometry(1,1);
 function skyDisc(inner,outer,size){
  const material=new THREE.ShaderMaterial({transparent:true,depthWrite:false,depthTest:true,fog:false,uniforms:{inner:{value:new THREE.Color(inner)},outer:{value:new THREE.Color(outer)},fade:{value:0}},vertexShader:`varying vec2 uvSky;void main(){uvSky=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`uniform vec3 inner;uniform vec3 outer;uniform float fade;varying vec2 uvSky;void main(){float r=length(uvSky-.5)*2.;float a=1.-smoothstep(.72,1.,r);gl_FragColor=vec4(mix(inner,outer,smoothstep(.1,.95,r)),a*fade);}`});
