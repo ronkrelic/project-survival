@@ -23,9 +23,12 @@ export const materials=Object.freeze({
  20:{name:'lantern',yield:'lantern',seconds:.4,color:0xe3dfb9},
  19:{name:'constructed earth',yield:'earth',seconds:.4,color:0x9b7c6c},
  18:{name:'hearthglow ore',yield:'hearthglow ore',seconds:2.4,color:0x9bb8ae},
+ 25:{name:'Still Water',seconds:Infinity,color:0x5b9994},
  9:{name:'foundation stone',seconds:Infinity,color:0x8c7378}
 });
 export const breakable=id=>Number.isFinite(materials[id]?.seconds);
 
 // Open doors retain a targetable voxel but do not support or obstruct a body.
-export const isSolid=id=>!!id&&id!==23;
+export const WATER=25;
+export const isWater=id=>id===WATER;
+export const isSolid=id=>!!id&&id!==23&&!isWater(id);

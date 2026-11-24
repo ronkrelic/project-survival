@@ -33,7 +33,7 @@ export function voxelAt(x,y,z,seed){
 }
 export function generate(cx,cz,seed){
  const blocks=new Uint8Array(SIZE*SIZE*HEIGHT),light=new Uint8Array(blocks.length);
- for(let z=0;z<SIZE;z++)for(let x=0;x<SIZE;x++){let sun=15;for(let y=HEIGHT-1;y>=0;y--){const i=index(x,y,z),b=voxelAt(cx*SIZE+x,y,cz*SIZE+z,seed);blocks[i]=b;if(b)sun=0;light[i]=sun;}}
+ for(let z=0;z<SIZE;z++)for(let x=0;x<SIZE;x++){let sun=15;for(let y=HEIGHT-1;y>=0;y--){const i=index(x,y,z),b=voxelAt(cx*SIZE+x,y,cz*SIZE+z,seed);blocks[i]=b;if(b&&b!==25)sun=0;light[i]=sun;}}
  return {cx,cz,blocks,light};
 }
 
@@ -61,12 +61,46 @@ function profile(x,z,seed){
  const surface=[1,11,r<10?13:12,14,15][type];
  return {h,w,type,surface};
 }
-export function wakingHeight(x,z,seed=DEFAULT_SEED){return profile(x,z,seed).h;}
+// Static water is generated, never a saved edit. Cut banks deliberately do not drain.
+// All callers share the same integer bed and water plane, including unloaded halos.
+const basins=new Map();
+function waterAllowed(x,z){return Math.hypot(x,z)>64&&!(Math.abs(x-12)<24&&z>-180&&z<-80);}
+function pondBasin(a,b,seed){
+ const key=a+','+b+','+seed;if(basins.has(key))return basins.get(key);
+ let basin=null;
+ if(hash(a,b,seed+601)<.32){
+  const x=a*96+24+Math.floor(hash(a,b,seed+602)*48),z=b*96+24+Math.floor(hash(a,b,seed+603)*48),r=5+Math.floor(hash(a,b,seed+604)*4),p=profile(x,z,seed);
+  if(waterAllowed(x-r-2,z-r-2)&&waterAllowed(x+r+2,z+r+2)&&p.w[0]+p.w[1]>.85){
+   let bank=HEIGHT;for(let dz=-r-1;dz<=r+1;dz++)for(let dx=-r-1;dx<=r+1;dx++)if(Math.abs(Math.hypot(dx,dz)-r)<.8)bank=Math.min(bank,profile(x+dx,z+dz,seed).h);
+   // Prefer existing low ground; carve only a shallow bowl inside its closed bank.
+   const plane=Math.min(p.h,bank-1);
+   if(p.h-plane<=1)basin={x,z,r,plane};
+  }
+ }
+ if(basins.size>=2048)basins.clear();basins.set(key,basin);return basin;
+}
+export function waterColumn(x,z,seed=DEFAULT_SEED){
+ const p=profile(x,z,seed);let water=-1;
+ if(!waterAllowed(x,z))return {...p,water};
+ if(p.w[2]>.65&&riverDistance(x,z,seed)<9){
+  const start=Math.floor(x/16)*16;let bed=HEIGHT;
+  for(let xx=start;xx<start+16;xx+=2){const zz=Math.round(Math.sin(xx/73+seed)*30+Math.sin(xx/181)*48);bed=Math.min(bed,profile(xx,zz,seed).h);}
+  const plane=bed+2;if(p.h<plane&&p.h>=plane-3)water=plane;
+ }
+ const basin=pondBasin(Math.floor(x/96),Math.floor(z/96),seed);
+ if(basin&&p.w[0]+p.w[1]>.75){
+  const d=Math.hypot(x-basin.x,z-basin.z)/basin.r;
+  if(d<1){const depth=Math.max(1,Math.ceil(3*(1-d*d)));p.h=Math.max(basin.plane-3,Math.min(p.h,basin.plane-depth));water=basin.plane;}
+ }
+ return {...p,water};
+}
+export function wakingHeight(x,z,seed=DEFAULT_SEED){return waterColumn(x,z,seed).h;}
+export function wakingSurface(x,z,seed=DEFAULT_SEED){const p=waterColumn(x,z,seed);return Math.max(p.h,p.water)+1;}
 // Column work is shared by generation and meshing, never dependent on visit order.
 const columns=new Map();
 function column(x,z,seed){
  const key=x+','+z+','+seed;if(columns.has(key))return columns.get(key);
- const p=profile(x,z,seed),extra=[];
+ const p=waterColumn(x,z,seed),extra=[];
  const chance=hash(x,z,seed+7);
  if(chance<.004*p.w[0])p.surface=10;
  if(chance>.97&&chance<.97+.025*p.w[0])extra.push([p.h+1,16]);
@@ -75,7 +109,7 @@ function column(x,z,seed){
  for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
   const a=ax+dx,b=az+dz,tx=a*12+2+Math.floor(hash(a,b,seed+20)*8),tz=b*12+2+Math.floor(hash(a,b,seed+21)*8);
   const xx=x-tx,zz=z-tz;if(Math.abs(xx)>3||Math.abs(zz)>3)continue;
-  const q=profile(tx,tz,seed);if(hash(a,b,seed+22)>.90*q.w[1]+.10*q.w[0])continue;
+  const q=waterColumn(tx,tz,seed);if(q.water>=0||p.water>=0)continue;if(hash(a,b,seed+22)>.90*q.w[1]+.10*q.w[0])continue;
   if(!xx&&!zz)for(let y=q.h+1;y<=q.h+5;y++)extra.push([y,5]);
   for(let y=q.h+4;y<=q.h+8;y++)if(xx*xx+zz*zz+(y-q.h-6)**2<10)extra.push([y,6]);
  }
@@ -85,10 +119,11 @@ export function wakingVoxel(x,y,z,seed=DEFAULT_SEED){
  if(y<0||y>=HEIGHT)return 0;const p=column(x,z,seed);
  if(y<2)return FOUNDATION_STONE;
  if(y<=p.h){if((p.type===2||p.type===3)&&y>=p.h-12&&y<p.h-1&&hash(Math.floor(x/3),Math.floor(z/3),seed+Math.floor(y/3)*41+910)<.09)return 18;if(y===p.h)return p.surface;if(p.type===3&&y>p.h-4)return 13;if(p.type===4&&y>p.h-3)return 15;return Math.floor(y/4)%2?2:3;}
- for(const [yy,id] of p.extra)if(y===yy)return id;return 0;
+ if(y<=p.water)return 25;
+ if(p.water<0)for(const [yy,id] of p.extra)if(y===yy)return id;return 0;
 }
 export function generateWaking(cx,cz,seed=DEFAULT_SEED){
  const blocks=new Uint8Array(SIZE*SIZE*HEIGHT),light=new Uint8Array(blocks.length);
- for(let z=0;z<SIZE;z++)for(let x=0;x<SIZE;x++){const wx=cx*SIZE+x,wz=cz*SIZE+z;column(wx,wz,seed);let sun=15;for(let y=HEIGHT-1;y>=0;y--){const i=index(x,y,z),b=wakingVoxel(wx,y,wz,seed);blocks[i]=b;if(b)sun=0;light[i]=sun;}}
+ for(let z=0;z<SIZE;z++)for(let x=0;x<SIZE;x++){const wx=cx*SIZE+x,wz=cz*SIZE+z;column(wx,wz,seed);let sun=15;for(let y=HEIGHT-1;y>=0;y--){const i=index(x,y,z),b=wakingVoxel(wx,y,wz,seed);blocks[i]=b;if(b&&b!==25)sun=0;light[i]=sun;}}
  return {cx,cz,blocks,light,waking:true};
 }
