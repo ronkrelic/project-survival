@@ -4,6 +4,7 @@ import {Player} from './player.js';
 import {terrainHeight,wakingHeight,wakingSurface,hash,islandRadius,sparkNodes} from './generation.js';
 import {Mining} from './mining.js';
 import {createMusic} from './music.js';
+import {GARMENTS,WARMTH,coldStep,cleanWorn,validWorn,validMoments,keepMoment,backfillMoments,dayPhase,MOMENT_LABELS} from './comfort.js';
 // Batch Three - Relic, November 23, 2026. Local comfort settings.
 const settings={sfx:1,music:1,sensitivity:1};
 let settingsPanel=null;
@@ -33,10 +34,12 @@ const mining=new Mining(scene,camera,world,player,renderer.domElement);
 
 // The island assembles behind the curtain; identity lasts only for this session.
 const session={name:'',started:false};
+let worn={body:null,head:null},moments=[];
+const comfort={cold:0,wet:0};
 const curtain=document.getElementById('waking'),wakeButton=document.getElementById('wake'),nameInput=document.getElementById('character-name'),wakeHint=document.getElementById('wake-hint');
 wakeButton.addEventListener('click',()=>{
  if(!world.loaded||session.started)return;
- session.name=Array.from(nameInput.value.trim()).slice(0,16).join('');player.characterName=session.name;session.started=true;
+ session.name=Array.from(nameInput.value.trim()).slice(0,16).join('');player.characterName=session.name;session.started=true;if(session.name)recordMoment('characterNamed');
  renderer.domElement.style.visibility='visible';curtain.classList.add('leaving');setTimeout(()=>{curtain.hidden=true;curtain.style.display='none';},1200);
  renderer.domElement.requestPointerLock()?.catch(()=>{wakeHint.textContent='Click the island to wake.';});
 });
@@ -204,7 +207,7 @@ for(let z=-100;z>=-146;z--){const mat=new THREE.MeshBasicMaterial({color:0x9e8b9
 const shoreGrass=new THREE.Mesh(new THREE.CylinderGeometry(10,8,3,14),new THREE.MeshBasicMaterial({color:0x86a48b}));shoreGrass.position.set(12,35.5,-156);shore.add(shoreGrass);
 for(const [x,z] of [[8,-156],[17,-160]]){const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.35,.5,4,6),new THREE.MeshBasicMaterial({color:0x927866}));trunk.position.set(x,39,z);const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(2.8,1),new THREE.MeshBasicMaterial({color:0x8ba48a}));crown.position.set(x,42,z);shore.add(trunk,crown);}
 const naming=document.createElement('div');naming.id='guide-naming';naming.hidden=true;naming.style.cssText='position:fixed;inset:0;z-index:30;background:#11152be8;color:#f3cbb7;display:none;place-content:center;text-align:center;font:18px Georgia,serif';naming.innerHTML='<label for="guide-name">A name to carry onward</label><input id="guide-name" value="Ember" maxlength="16" style="margin:22px auto;padding:12px;background:#27263a;color:#f3cbb7;border:1px solid #9b7f83;font:inherit;text-align:center"><button id="accept-guide-name" style="padding:12px;background:#e7bba4;color:#27263a;border:0;font:inherit">Give this name</button>';document.body.append(naming);
-function acceptGuideName(){if(crossing.named)return;const input=document.getElementById('guide-name');const name=Array.from(input.value.trim()).slice(0,16).join('');if(!name){input.value='Ember';input.focus();return;}crossing.name=name;crossing.named=true;guide.name=name;guide.delight=6;guide.say('given-name',name+'.');guide.say('keep-name',"I'll keep it.");naming.hidden=true;naming.style.display='none';renderer.domElement.requestPointerLock()?.catch(()=>{});}
+function acceptGuideName(){if(crossing.named)return;const input=document.getElementById('guide-name');const name=Array.from(input.value.trim()).slice(0,16).join('');if(!name){input.value='Ember';input.focus();return;}crossing.name=name;crossing.named=true;recordMoment('guideNamed');guide.name=name;guide.delight=6;guide.say('given-name',name+'.');guide.say('keep-name',"I'll keep it.");naming.hidden=true;naming.style.display='none';renderer.domElement.requestPointerLock()?.catch(()=>{});}
 document.getElementById('accept-guide-name').onclick=acceptGuideName;
 const baseBlock=world.block.bind(world);world.block=function(x,y,z){
  if(world.waking)return baseBlock(x,y,z);
@@ -238,7 +241,7 @@ function updateCrossing(dt){
  if(crossing.manifest===1)guide.say('way-open',"The way is open. It only goes forward.");
  if(!crossing.named&&!crossing.offered&&crossing.manifest===1&&Math.hypot(player.x-12,player.z+98)<6){crossing.offered=true;guide.say('ask-name',"You've called me Ember since you woke. Maybe it's mine. But a name should be given, not assumed. Would you give me one?");}
  if(crossing.offered&&!crossing.named&&guide.active?.id==='ask-name'&&guide.mode==='speaking'&&guide.elapsed>guide.active.duration){naming.hidden=false;naming.style.display='grid';document.exitPointerLock();document.getElementById('guide-name').focus();}
- if(crossing.named&&player.z<-112&&Math.abs(player.x-12)<2){crossing.crossed=true;crossing.furthest=Math.min(crossing.furthest,player.z);}
+ if(crossing.named&&player.z<-112&&Math.abs(player.x-12)<2){if(!crossing.crossed)recordMoment('crossed');crossing.crossed=true;crossing.furthest=Math.min(crossing.furthest,player.z);}
  if(crossing.crossed&&player.z<-145){crossing.furthest=-151;crossing.veil={t:0,moved:false,fade:0};mining.cancel();}
  decks.forEach(d=>{const gone=crossing.crossed&&d.position.z>crossing.furthest+3;d.material.opacity=THREE.MathUtils.damp(d.material.opacity,gone?0:crossing.manifest,2,dt);d.position.y=bridgeY(Math.floor(d.position.z))+.5-(1-crossing.manifest)*3;});
 }
@@ -381,7 +384,7 @@ const inventoryTitle=document.createElement('h2');inventoryTitle.textContent='Ga
 const inventoryRows=document.createElement('div'),inventoryHint=document.createElement('p');inventoryRows.id='inventory-slots';inventoryRows.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(68px,1fr));gap:8px;max-height:50vh;overflow-y:auto';inventoryHint.textContent='I or Esc to close · the world keeps moving';inventoryHint.style.fontSize='12px';inventory.append(inventoryTitle,inventoryRows,inventoryHint);document.body.append(inventory);
 const swatches={earth:'#83a68c',stone:'#b78e72',wood:'#927866',dryfiber:'#c8b58b',sparkstone:'#d9ac78','teal flora bits':'#8abbb2','violet flora bits':'#b2a0bb',sand:'#c7a16a'};
 let inventoryStamp='',inventoryRevision=0;
-function refreshInventory(){if(loadoutDrag?.active)return;const stamp=inventoryRevision+':'+layoutRevision+':'+player.selectedTool;if(stamp===inventoryStamp)return;inventoryStamp=stamp;inventoryRows.replaceChildren();for(const [index,name] of loadoutSlots('bag').entries()){if(!name){const empty=document.createElement('div');empty.className='inventory-slot';markLoadoutSlot(empty,'bag',index,null);inventoryRows.append(empty);continue;}const count=player.materials[name]||0;const row=document.createElement((name==='sunmeadow grain'||cookedFoods[name]||hotbarOrder.includes(name))?'button':'div'),swatch=document.createElement('span'),amount=document.createElement('strong'),label=document.createElement('small');row.className='inventory-slot';markLoadoutSlot(row,'bag',index,name);row.title=name;if(hotbarOrder.includes(name)){row.type='button';row.title='Pin '+name;row.setAttribute('aria-pressed',String(player.selectedTool===name));row.onclick=()=>{selectSlot(name);refreshInventory();};}if(name==='sunmeadow grain'){row.type='button';row.title='Eat sunmeadow grain · restores 25 hunger';row.onclick=()=>nourishment.eat();row.style.color='inherit';}if(cookedFoods[name]){const f=cookedFoods[name];row.type='button';row.title='Eat '+name+' · '+f.hunger+' hunger + '+f.health+' health';row.onclick=()=>eatCooked(name);}row.setAttribute('aria-label',name+': '+count+(name==='sunmeadow grain'?' · eat, restores 25 hunger':''));row.style.cssText='display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-width:0;min-height:86px;padding:8px 4px;background:#373344;border:1px solid #99857c55;border-radius:12px;text-align:center';swatch.style.cssText='width:22px;height:22px;border-radius:6px;background:'+(swatches[name]||'#b5a3a0');swatch.style.cssText='width:32px;height:32px';swatch.innerHTML=itemIcon(name);amount.textContent=count;amount.style.fontSize='16px';label.textContent=name+(name==='sunmeadow grain'?' · eat':'');label.style.cssText='font-size:10px;color:#ccb8a8;overflow-wrap:anywhere';row.append(swatch,amount,label);inventoryRows.append(row);}while(inventoryRows.childNodes.length<27){const empty=document.createElement('div');empty.className='inventory-slot';empty.setAttribute('aria-hidden','true');inventoryRows.append(empty);}}
+function refreshInventory(){if(loadoutDrag?.active)return;const stamp=inventoryRevision+':'+layoutRevision+':'+player.selectedTool;if(stamp===inventoryStamp)return;inventoryStamp=stamp;inventoryRows.replaceChildren();for(const [index,name] of loadoutSlots('bag').entries()){if(!name){const empty=document.createElement('div');empty.className='inventory-slot';markLoadoutSlot(empty,'bag',index,null);inventoryRows.append(empty);continue;}const count=player.materials[name]||0;const row=document.createElement((GARMENTS[name]||name==='sunmeadow grain'||cookedFoods[name]||hotbarOrder.includes(name))?'button':'div'),swatch=document.createElement('span'),amount=document.createElement('strong'),label=document.createElement('small');row.className='inventory-slot';markLoadoutSlot(row,'bag',index,name);row.title=name;if(hotbarOrder.includes(name)){row.type='button';row.title='Pin '+name;row.setAttribute('aria-pressed',String(player.selectedTool===name));row.onclick=()=>{selectSlot(name);refreshInventory();};}if(name==='sunmeadow grain'){row.type='button';row.title='Eat sunmeadow grain · restores 25 hunger';row.onclick=()=>nourishment.eat();row.style.color='inherit';}if(cookedFoods[name]){const f=cookedFoods[name];row.type='button';row.title='Eat '+name+' · '+f.hunger+' hunger + '+f.health+' health';row.onclick=()=>eatCooked(name);}if(GARMENTS[name]){row.type='button';row.title='Wear '+name;row.onclick=()=>wearGarment(name);label.textContent=name+' · wear';}row.setAttribute('aria-label',name+': '+count+(name==='sunmeadow grain'?' · eat, restores 25 hunger':''));row.style.cssText='display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-width:0;min-height:86px;padding:8px 4px;background:#373344;border:1px solid #99857c55;border-radius:12px;text-align:center';swatch.style.cssText='width:22px;height:22px;border-radius:6px;background:'+(swatches[name]||'#b5a3a0');swatch.style.cssText='width:32px;height:32px';swatch.innerHTML=itemIcon(name);amount.textContent=count;amount.style.fontSize='16px';label.textContent=name+(GARMENTS[name]?' · wear':name==='sunmeadow grain'?' · eat':'');label.style.cssText='font-size:10px;color:#ccb8a8;overflow-wrap:anywhere';row.append(swatch,amount,label);inventoryRows.append(row);}while(inventoryRows.childNodes.length<27){const empty=document.createElement('div');empty.className='inventory-slot';empty.setAttribute('aria-hidden','true');inventoryRows.append(empty);}}
 addEventListener('keydown',e=>{if(!session.started||e.target.matches?.('input,textarea,[contenteditable="true"]'))return;if(e.code==='KeyI'&&!e.repeat){e.preventDefault();inventory.hidden=!inventory.hidden;if(!inventory.hidden){mining.cancel();player.keys.clear();player.jumpQueued=false;document.exitPointerLock?.();}refreshInventory();}else if(e.code==='Escape')inventory.hidden=true;});
 setInterval(()=>{if(!inventory.hidden)refreshInventory();},150);
 window.grin.inventory={panel:inventory,refresh:refreshInventory};
@@ -414,8 +417,8 @@ const codeInput=document.createElement('input');codeInput.id='join-code';codeInp
 const netChip=document.createElement('div');netChip.id='session-code';netChip.className='soft-panel';netChip.style.cssText='display:none;position:fixed;z-index:24;top:18px;right:168px;width:154px;box-sizing:border-box;padding:9px;background:#292938df;color:#f3d6bd;border-radius:12px;font:13px Georgia,serif';document.body.append(netChip);
 const netNotice=document.createElement('section');netNotice.id='network-notice';netNotice.hidden=true;netNotice.style.cssText='position:fixed;z-index:45;left:50%;top:35%;transform:translateX(-50%);max-width:340px;padding:24px;background:#292938f5;color:#f3d6bd;border:1px solid #99857c;border-radius:18px;font:16px Georgia,serif';const noticeText=document.createElement('p');netNotice.append(noticeText);netButton('Keep walking',netNotice,()=>{netNotice.hidden=true;});document.body.append(netNotice);
 function notice(text){noticeText.textContent=text;netNotice.hidden=false;logLine(text);}
-function ownState(){return {id:net.peer?.id||'',name:session.name||nameInput.value.trim().slice(0,16)||'Wanderer',x:player.x,y:player.y,z:player.z,yaw:player.yaw,realm:world.waking?'waking':'island'};}
-function validState(p){return p&&[p.x,p.y,p.z,p.yaw].every(Number.isFinite)&&Math.abs(p.x)<100000&&Math.abs(p.z)<100000&&Math.abs(p.y)<1000&&['island','waking'].includes(p.realm);}
+function ownState(){return {id:net.peer?.id||'',name:session.name||nameInput.value.trim().slice(0,16)||'Wanderer',x:player.x,y:player.y,z:player.z,yaw:player.yaw,realm:world.waking?'waking':'island',worn:{...worn}};}
+function validState(p){return p&&[p.x,p.y,p.z,p.yaw].every(Number.isFinite)&&Math.abs(p.x)<100000&&Math.abs(p.z)<100000&&Math.abs(p.y)<1000&&['island','waking'].includes(p.realm)&&(p.worn===undefined||validWorn(p.worn));}
 function send(c,m){if(c?.open)c.send(m);}
 function broadcast(m){for(const c of net.links.values())send(c,m);}
 function deltaKey(d){return [d.realm,d.x,d.y,d.z].join(':');}
@@ -447,10 +450,10 @@ window.grin.net=net;
 // First-pass matte friends. Spirits are deliberately absent from this protocol.
 const avatars=new Map();
 function beveledVoxel(w,h,d,color){const shape=new THREE.Shape();shape.moveTo(-w/2,-h/2);shape.lineTo(w/2,-h/2);shape.lineTo(w/2,h/2);shape.lineTo(-w/2,h/2);shape.closePath();const geometry=new THREE.ExtrudeGeometry(shape,{depth:d,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:.035,bevelThickness:.035});geometry.translate(0,0,-d/2);return new THREE.Mesh(geometry,new THREE.MeshLambertMaterial({color}));}
-function makeAvatar(p){const body=new THREE.Group(),torso=beveledVoxel(.44,.58,.24,0x8aada0),head=beveledVoxel(.32,.32,.30,0xd7b39d);torso.position.y=1.03;head.position.y=1.53;body.add(torso,head);const limbs=[];for(const side of [-1,1]){const leg=beveledVoxel(.15,.56,.17,0x77768b);leg.position.set(side*.13,.33,0);const arm=beveledVoxel(.14,.52,.17,0xb3a2b3);arm.position.set(side*.34,1.03,0);body.add(leg,arm);limbs.push(leg,arm);}const name=document.createElement('div');name.className='remote-nameplate';name.style.cssText='position:fixed;z-index:10;pointer-events:none;color:#f3cbb7;font:13px Georgia,serif;letter-spacing:.04em;text-shadow:0 1px 8px #352533;transform:translate(-50%,-100%)';name.textContent=p.name;document.body.append(name);body.position.set(p.x,p.y,p.z);scene.add(body);return {body,limbs,name,clock:0};}
+function makeAvatar(p){const body=new THREE.Group(),torso=beveledVoxel(.44,.58,.24,0x8aada0),head=beveledVoxel(.32,.32,.30,0xd7b39d);torso.position.y=1.03;head.position.y=1.53;body.add(torso,head);const outfit=new THREE.Group();body.add(outfit);const limbs=[];for(const side of [-1,1]){const leg=beveledVoxel(.15,.56,.17,0x77768b);leg.position.set(side*.13,.33,0);const arm=beveledVoxel(.14,.52,.17,0xb3a2b3);arm.position.set(side*.34,1.03,0);body.add(leg,arm);limbs.push(leg,arm);}const name=document.createElement('div');name.className='remote-nameplate';name.style.cssText='position:fixed;z-index:10;pointer-events:none;color:#f3cbb7;font:13px Georgia,serif;letter-spacing:.04em;text-shadow:0 1px 8px #352533;transform:translate(-50%,-100%)';name.textContent=p.name;document.body.append(name);body.position.set(p.x,p.y,p.z);scene.add(body);const avatar={body,limbs,name,outfit,outfitKey:null,clock:0};dressAvatar(avatar,p.worn);return avatar;}
 function removeAvatar(id){const a=avatars.get(id);if(!a)return;scene.remove(a.body);a.body.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});a.name.remove();avatars.delete(id);}
 let presenceLast=performance.now();
-function animateFriends(now){requestAnimationFrame(animateFriends);const dt=Math.min(.05,(now-presenceLast)/1000);presenceLast=now;for(const [id,p] of net.people){if(!validState(p))continue;let a=avatars.get(id);if(!a){a=makeAvatar(p);avatars.set(id,a);}const same=session.started&&!crossing.veil&&p.realm===(world.waking?'waking':'island');a.body.visible=same;a.name.style.display='none';if(!same)continue;const moving=Math.hypot(a.body.position.x-p.x,a.body.position.z-p.z)>.035;a.clock+=dt*(moving?9:0);const t=1-Math.exp(-14*dt);a.body.position.lerp(new THREE.Vector3(p.x,p.y,p.z),t);const delta=Math.atan2(Math.sin(p.yaw-a.body.rotation.y),Math.cos(p.yaw-a.body.rotation.y));a.body.rotation.y+=delta*t;a.limbs.forEach((limb,i)=>{limb.rotation.x=moving?Math.sin(a.clock+(i<2?0:Math.PI))*.25:0;});a.body.position.y+=moving?Math.sin(a.clock*2)*.015:0;a.name.textContent=p.name;const point=a.body.position.clone().add(new THREE.Vector3(0,1.95,0)).project(camera);if(point.z>-1&&point.z<1&&Math.abs(point.x)<.98&&Math.abs(point.y)<.98){a.name.style.display='block';a.name.style.left=(point.x*.5+.5)*innerWidth+'px';a.name.style.top=(-point.y*.5+.5)*innerHeight+'px';}}}
+function animateFriends(now){requestAnimationFrame(animateFriends);const dt=Math.min(.05,(now-presenceLast)/1000);presenceLast=now;for(const [id,p] of net.people){if(!validState(p))continue;let a=avatars.get(id);if(!a){a=makeAvatar(p);avatars.set(id,a);}dressAvatar(a,p.worn);const same=session.started&&!crossing.veil&&p.realm===(world.waking?'waking':'island');a.body.visible=same;a.name.style.display='none';if(!same)continue;const moving=Math.hypot(a.body.position.x-p.x,a.body.position.z-p.z)>.035;a.clock+=dt*(moving?9:0);const t=1-Math.exp(-14*dt);a.body.position.lerp(new THREE.Vector3(p.x,p.y,p.z),t);const delta=Math.atan2(Math.sin(p.yaw-a.body.rotation.y),Math.cos(p.yaw-a.body.rotation.y));a.body.rotation.y+=delta*t;a.limbs.forEach((limb,i)=>{limb.rotation.x=moving?Math.sin(a.clock+(i<2?0:Math.PI))*.25:0;});a.body.position.y+=moving?Math.sin(a.clock*2)*.015:0;a.name.textContent=p.name;const point=a.body.position.clone().add(new THREE.Vector3(0,1.95,0)).project(camera);if(point.z>-1&&point.z<1&&Math.abs(point.x)<.98&&Math.abs(point.y)<.98){a.name.style.display='block';a.name.style.left=(point.x*.5+.5)*innerWidth+'px';a.name.style.top=(-point.y*.5+.5)*innerHeight+'px';}}}
 requestAnimationFrame(animateFriends);window.grin.avatars={items:avatars,remove:removeAvatar};
 // Host-guest media calls; host mixes other guests into each outgoing stream.
 const voice={promise:null,context:null,streams:new Map(),calls:new Map(),mixes:new Map(),audio:new Map(),muted:false};
@@ -477,7 +480,7 @@ const voiceRequest=voice.request.bind(voice);voice.request=async function(){cons
 setInterval(()=>{if(net.mode==='host'){for(const c of net.links.values()){const state=c.peerConnection?.connectionState;if(state==='failed'||state==='closed'){c.close();continue;}if(!c.psName){c.psWaiting=(c.psWaiting||0)+1;if(c.psWaiting>=20)c.close();}}}else if(net.mode==='guest'&&net.host){const state=net.host.peerConnection?.connectionState;if(state==='failed'||state==='closed')net.host.close();}},1000);
 
 // Stage Eight — Relic, 2026-11-22. Context tools; no equipment or durability.
-const recipes=[{result:'workbench',cost:{wood:4}},{result:'door',workbench:true,cost:{wood:3}},{result:'fence',count:2,workbench:true,cost:{wood:2}},{result:'lantern',cost:{'hearthglow ore':1,wood:2}},{result:'wooden pickaxe',cost:{wood:3}},{result:'wooden axe',cost:{wood:3}},{result:'wooden shovel',cost:{wood:3}},{result:'wooden hoe',cost:{wood:3}}];
+const recipes=[...Object.entries(GARMENTS).map(([result,g])=>({result,cost:{...g.cost},workbench:true})),{result:'workbench',cost:{wood:4}},{result:'door',workbench:true,cost:{wood:3}},{result:'fence',count:2,workbench:true,cost:{wood:2}},{result:'lantern',cost:{'hearthglow ore':1,wood:2}},{result:'wooden pickaxe',cost:{wood:3}},{result:'wooden axe',cost:{wood:3}},{result:'wooden shovel',cost:{wood:3}},{result:'wooden hoe',cost:{wood:3}}];
 const craftHistory=[];let craftedCount=0,craftBase=0;
 const crafting=document.createElement('section');crafting.id='crafting';crafting.hidden=true;crafting.setAttribute('aria-label','Make by hand');crafting.style.cssText='position:fixed;z-index:25;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,85vw);max-height:75vh;overflow:auto;padding:24px;background:#292938f5;color:#ead9c7;border:1px solid #99857c;border-radius:18px;font:16px Georgia,serif';document.body.append(crafting);
 // Read placed voxels, including replicated guest edits; distance is to the cell centre.
@@ -488,7 +491,7 @@ function nearWorkbench(){
  return false;
 }
 function canCraft(r){return (!r.workbench||nearWorkbench())&&(!r.hearth||nearLitHearth())&&Object.entries(r.cost).every(([k,n])=>(player.materials[k]||0)>=n);}
-function craftItem(name){const r=recipes.find(r=>r.result===name);if(!world.waking||!r||!canCraft(r))return false;if(!r.hearth&&net.mode==='guest'&&craftHistory.length>=256){logLine('Let the host catch up before shaping another tool.');return false;}for(const [k,n] of Object.entries(r.cost))player.materials[k]-=n;player.materials[name]=(player.materials[name]||0)+(r.count||1);if(!r.hearth&&net.mode==='guest')craftHistory.push(name);if(net.mode==='guest'&&net.ready)send(net.host,{type:'craft-checkpoint',delta:{realm:'waking',crafts:craftHistory.slice()}});craftedCount++;logLine('A little patience, an edge, a beginning. You made a '+name+'.');refreshCrafting();refreshInventory();return true;}
+function craftItem(name){const r=recipes.find(r=>r.result===name);if(!world.waking||!r||!canCraft(r))return false;if(!r.hearth&&net.mode==='guest'&&craftHistory.length>=256){logLine('Let the host catch up before shaping another tool.');return false;}for(const [k,n] of Object.entries(r.cost))player.materials[k]-=n;player.materials[name]=(player.materials[name]||0)+(r.count||1);if(!r.hearth&&net.mode==='guest')craftHistory.push(name);if(net.mode==='guest'&&net.ready)send(net.host,{type:'craft-checkpoint',delta:{realm:'waking',crafts:craftHistory.slice()}});craftedCount++;if(GARMENTS[name])recordMoment('firstGarmentCrafted');logLine('A little patience, an edge, a beginning. You made a '+name+'.');refreshCrafting();refreshInventory();return true;}
 function refreshCrafting(){crafting.replaceChildren();const title=document.createElement('h2');title.textContent='Made by your hands';crafting.append(title);for(const r of recipes){if(r.hearth&&!nearLitHearth())continue;const b=document.createElement('button');b.dataset.recipe=r.result;b.textContent=r.result+(r.count?' × '+r.count:'')+' · ';Object.entries(r.cost).forEach(([k,n],i)=>{if(i)b.append(document.createTextNode(' + '));const ingredient=document.createElement('span'),owned=player.materials[k]||0;ingredient.textContent=n+' '+k+' ('+owned+')';ingredient.style.color='#514c49';ingredient.style.opacity=owned>=n?'1':'.55';b.append(ingredient);});b.insertAdjacentHTML('afterbegin',itemIcon(r.result));b.disabled=!canCraft(r);b.style.cssText='display:block;width:100%;text-align:left;padding:16px;margin:10px 0;background:#373344;color:#ead9c7;border:1px solid #99857c;border-radius:12px;font:inherit;opacity:'+(b.disabled?'.75':'1');if(r.workbench){const hint=document.createElement('small');hint.textContent=nearWorkbench()?'workbench nearby':'needs a workbench nearby';hint.style.cssText='display:block;margin-top:6px;color:#514c49;opacity:.75';b.append(hint);}b.onclick=()=>craftItem(r.result);crafting.append(b);}const close=document.createElement('button');close.textContent='Close · C / Esc';close.onclick=()=>crafting.hidden=true;crafting.append(close);}
 addEventListener('keydown',e=>{if(!session.started||e.target.matches?.('input,textarea,[contenteditable="true"]'))return;if(e.code==='KeyC'&&!e.repeat&&world.waking){e.preventDefault();crafting.hidden=!crafting.hidden;inventory.hidden=true;mining.cancel();player.keys.clear();document.exitPointerLock?.();refreshCrafting();}else if(e.code==='Escape'||e.code==='KeyI')crafting.hidden=true;});
 setInterval(()=>{if(!crafting.hidden)refreshCrafting();},250);
@@ -538,7 +541,9 @@ const nourishment={hunger:100,health:100,lowArmed:true,fullNoted:false,faintTime
     const line=guide.queue.pop();guide.queue.unshift(line);guide.cooldown=0;}
    return;
   }
-  const fedSeconds=Math.min(dt,this.hunger*15);this.hunger=Math.max(0,this.hunger-dt/15);
+  // Cold only spends food a little faster; the existing starvation/FAINT path owns health.
+  tickWarmth(dt);const lean=1+WARMTH.hungerLean*comfort.cold/WARMTH.max;
+  const fedSeconds=Math.min(dt,this.hunger*15/lean);this.hunger=Math.max(0,this.hunger-dt*lean/15);
   this.health=Math.max(0,this.health-(dt-fedSeconds)/5);
   const careSeconds=Math.min(dt,this.care);this.care-=careSeconds;
   if(this.hunger>=90)this.health=Math.min(100,this.health+dt/5);
@@ -617,11 +622,11 @@ const bounded=(n,min,max)=>Number.isFinite(n)&&n>=min&&n<=max;
 const record=o=>o!==null&&typeof o==='object'&&!Array.isArray(o);
 const shortText=s=>typeof s==='string'&&s.length<=80;
 const uuid=s=>typeof s==='string'&&/^[a-f0-9-]{36}$/.test(s);
-const itemNames=new Set(['workbench','door','fence','lantern','earth','stone','wood','leaf bits','dryfiber','sparkstone','teal flora bits','violet flora bits','sand','snow','echostone','hearthglow ore','sunmeadow grain','sunmeadow seeds','hearth bread','sunseed cakes',...['wooden','stone'].flatMap(t=>['axe','hoe','pickaxe','shovel'].map(k=>t+' '+k))]);
+const itemNames=new Set([...Object.keys(GARMENTS),'workbench','door','fence','lantern','earth','stone','wood','leaf bits','dryfiber','sparkstone','teal flora bits','violet flora bits','sand','snow','echostone','hearthglow ore','sunmeadow grain','sunmeadow seeds','hearth bread','sunseed cakes',...['wooden','stone'].flatMap(t=>['axe','hoe','pickaxe','shovel'].map(k=>t+' '+k))]);
 function validBag(b){return record(b)&&Object.keys(b).length<=itemNames.size&&Object.entries(b).every(([k,n])=>itemNames.has(k)&&Number.isSafeInteger(n)&&bounded(n,0,1e9));}
 const coordinate=p=>record(p)&&[p.x,p.z].every(n=>Number.isInteger(n)&&bounded(n,-100000,100000))&&Number.isInteger(p.y)&&bounded(p.y,0,111);
 const limited=a=>Array.isArray(a)&&a.length<=100000;
-function validPersonal(p){return record(p)&&p.version===1&&p.seed===seed&&p.crossed===true&&uuid(p.identity)&&shortText(p.name)&&shortText(p.guideName)&&validBag(p.inventory)&&bounded(p.hunger,0,100)&&bounded(p.health,1,100)&&record(p.position)&&[p.position.x,p.position.z].every(n=>bounded(n,-100000,100000))&&bounded(p.position.y,-1000,1000)&&Array.isArray(p.crafts)&&p.crafts.length<=1024&&p.crafts.every(k=>itemNames.has(k))&&Number.isSafeInteger(p.craftBase??0)&&(p.craftBase??0)>=0;}
+function validPersonal(p){return record(p)&&(p.worn===undefined||validWorn(p.worn))&&(p.moments===undefined||validMoments(p.moments))&&p.version===1&&p.seed===seed&&p.crossed===true&&uuid(p.identity)&&shortText(p.name)&&shortText(p.guideName)&&validBag(p.inventory)&&bounded(p.hunger,0,100)&&bounded(p.health,1,100)&&record(p.position)&&[p.position.x,p.position.z].every(n=>bounded(n,-100000,100000))&&bounded(p.position.y,-1000,1000)&&Array.isArray(p.crafts)&&p.crafts.length<=1024&&p.crafts.every(k=>itemNames.has(k))&&Number.isSafeInteger(p.craftBase??0)&&(p.craftBase??0)>=0;}
 function validWorld(w){return record(w)&&w.version===1&&w.seed===seed&&record(w.flags)&&w.flags.crossed===true&&typeof w.flags.lit==='boolean'&&typeof w.flags.named==='boolean'&&shortText(w.flags.guideName)&&record(w.clock)&&bounded(w.clock.seconds,0,840)&&Number.isSafeInteger(w.clock.day)&&w.clock.day>0&&limited(w.deltas)&&w.deltas.every(d=>coordinate(d)&&['island','waking'].includes(d.realm)&&(!d.op||d.op==='till'||(d.op==='place'&&[1,2,5,12,14,15,19,20,21,22,23,24].includes(d.id))))&&limited(w.soil)&&w.soil.every(e=>Array.isArray(e)&&e.length===2&&coordinate(e[1])&&e[0]==='waking:'+cropKey(e[1].x,e[1].y,e[1].z))&&limited(w.crops)&&w.crops.every(p=>coordinate(p)&&typeof p.wild==='boolean'&&bounded(p.age,0,1e10))&&limited(w.wildHarvested)&&w.wildHarvested.every(k=>typeof k==='string'&&/^-?\d+:[0-9]+:-?\d+$/.test(k)&&coordinate(Object.fromEntries(k.split(':').map((n,i)=>[['x','y','z'][i],Number(n)]))))&&record(w.guests)&&Object.keys(w.guests).length<=1000&&Object.entries(w.guests).every(([k,g])=>uuid(k)&&record(g)&&validBag(g.bag)&&Number.isSafeInteger(g.craftCount)&&g.craftCount>=0);}
 function matchedSave(){try{const raw=localStorage.getItem(SAVE_PAIR);if(!raw||raw.length>20000000)return null;const s=JSON.parse(raw);return s?.version===2&&uuid(s.worldId)&&Number.isSafeInteger(s.generation)&&s.generation>0&&s.world?.worldId===s.worldId&&s.person?.worldId===s.worldId&&s.world?.generation===s.generation&&s.person?.generation===s.generation&&validWorld(s.world)&&validPersonal(s.person)?s:null;}catch{return null;}}
 function readSave(key){const s=matchedSave();return key===SAVE_WORLD?s?.world||null:key===SAVE_PERSON?s?.person||null:null;}
@@ -741,7 +746,7 @@ function updateWeatherPool(pool,time,fade){
 
 const islandSky=updateSky;
 function tickRhythm(dt){if(!world.waking){clockReadout.hidden=true;nightStars.visible=false;skyDress.visible=false;return;}clockReadout.hidden=false;nightStars.visible=true;if(session.started&&Number.isFinite(dt)&&dt>0){rhythm.seconds+=dt;while(rhythm.seconds>=DAY_SECONDS){rhythm.seconds-=DAY_SECONDS;rhythm.day++;saveGame();}}const s=rhythm.seconds,night=s>=600;const light=s<60?.35+.65*s/60:s<540?1:s<600?1-.74*(s-540)/60:s<780?.26:.26+.09*(s-780)/60;world.waterUniforms.waterTime.value=(rhythm.day-1)*DAY_SECONDS+s;world.waterUniforms.waterNight.value=1-light;phase.value=light;phase.name=s<60?'Dawn':s<540?'Daylight':s<600?'Dusk':s<780?'Night':'Dawn';sky.material.uniforms.progress.value=light;fogBase.copy(nightFog).lerp(dawnFog,light);if(world.material.userData.shader){world.material.userData.shader.uniforms.phaseLight.value=light;world.material.userData.shader.uniforms.firstFire.value=0;world.material.userData.shader.uniforms.wakingNight.value=1-light;}nightStars.position.copy(camera.position);updateSkyDressing(s);wakingFireLight.intensity=1+(1-light)*2;wakingFlame.material.opacity=.7+(1-light)*.25;const minutes=Math.floor(s<600?360+s/600*720:1080+(s-600)/240*720)%1440;clockReadout.textContent='Day '+rhythm.day+' · '+String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0')+' · '+phase.name;if(session.started&&player.awake&&s>=540&&s<780&&!arcFor().firstDusk){
-arcFor().firstDusk=true;
+arcFor().firstDusk=true;recordMoment('firstDusk');
 guide.say('first-dusk',"The sun is setting. Your first dusk out here. The dark isn't empty, you know that now. Light something warm, and I'll keep watch with you.");
 saveGame();
 }}
@@ -783,7 +788,9 @@ let personalIdentity=readSave(SAVE_PERSON)?.identity||crypto.randomUUID();
 const identitySnapshot=personalSnapshot;personalSnapshot=function(){return {...identitySnapshot(),identity:personalIdentity};};
 const identityLoad=loadPersonal;loadPersonal=function(s,position=false){if(s?.identity)personalIdentity=s.identity;return identityLoad(s,position);};
 const identitySend=send;send=function(c,m){if(m?.delta?.crafts)m={...m,delta:{...m.delta,craftBase}};if(m?.type==='hello')m={...m,identity:personalIdentity};if(m?.type==='welcome')m={...m,clock:{seconds:rhythm.seconds,day:rhythm.day}};return identitySend(c,m);};
-const clockGuest=guestMessage;guestMessage=function(m){if(m?.type==='ledger'&&uuid(m.worldId)&&validBag(m.bag)&&Number.isSafeInteger(m.craftCount)&&m.craftCount>=0){worldIdentity=m.worldId;const end=craftBase+craftHistory.length;if(m.craftCount>=craftBase&&m.craftCount<=end){craftHistory.splice(0,m.craftCount-craftBase);craftBase=m.craftCount;}else{craftHistory.length=0;craftBase=m.craftCount;}const bag=Object.assign(Object.create(null),m.bag);for(const name of craftHistory){const r=recipes.find(r=>r.result===name&&!r.hearth);if(r){for(const [k,n] of Object.entries(r.cost))bag[k]=Math.max(0,(bag[k]||0)-n);bag[name]=(bag[name]||0)+1;}}for(const [request,material] of placePending){if(request<=(m.through||0))placePending.delete(request);else bag[material]=Math.max(0,(bag[material]||0)-1);}player.materials=inventoryWithNotices(bag);refreshInventory();return;}if(m?.type==='welcome'&&m.clock){rhythm.seconds=Number(m.clock.seconds)||0;rhythm.day=Number(m.clock.day)||1;}clockGuest(m);};window.grin.netValidation.receive=(c,m)=>hostMessage(c,m);window.grin.netValidation.guest=m=>guestMessage(m);
+const clockGuest=guestMessage;guestMessage=function(m){if(m?.type==='ledger'&&uuid(m.worldId)&&validBag(m.bag)&&Number.isSafeInteger(m.craftCount)&&m.craftCount>=0){worldIdentity=m.worldId;const end=craftBase+craftHistory.length;if(m.craftCount>=craftBase&&m.craftCount<=end){craftHistory.splice(0,m.craftCount-craftBase);craftBase=m.craftCount;}else{craftHistory.length=0;craftBase=m.craftCount;}const bag=Object.assign(Object.create(null),m.bag);for(const name of craftHistory){const r=recipes.find(r=>r.result===name&&!r.hearth);if(r){for(const [k,n] of Object.entries(r.cost))bag[k]=Math.max(0,(bag[k]||0)-n);bag[name]=(bag[name]||0)+1;}}for(const [request,material] of placePending){if(request<=(m.through||0))placePending.delete(request);else bag[material]=Math.max(0,(bag[material]||0)-1);}// The host ledger counts ownership, including worn garments. The local bag does not.
+for(const name of Object.values(worn))if(name)bag[name]=Math.max(0,(bag[name]||0)-1);
+player.materials=inventoryWithNotices(bag);refreshInventory();return;}if(m?.type==='welcome'&&m.clock){rhythm.seconds=Number(m.clock.seconds)||0;rhythm.day=Number(m.clock.day)||1;}clockGuest(m);};window.grin.netValidation.receive=(c,m)=>hostMessage(c,m);window.grin.netValidation.guest=m=>guestMessage(m);
 
 // Settling-in interface: Relic, November 23, 2026. Palette and tuning vetoable.
 const carriedStyle=document.createElement('style');carriedStyle.textContent=`
@@ -810,7 +817,7 @@ text-align:center;box-shadow:0 3px 15px #302e3530;transform:translateX(-50%)}
 #inventory-character svg{opacity:.35}#inventory-character p{max-width:220px;font:13px/1.5 Georgia;opacity:.7}
 #crafting button{background:#c6c6a9!important;color:#514c49!important;border-color:#aa9475!important;border-radius:6px!important}
 `;document.head.append(carriedStyle);
-const characterRegion=document.createElement('aside');characterRegion.id='inventory-character';characterRegion.setAttribute('aria-label','Future character area, decorative placeholder');characterRegion.innerHTML='<svg width="55" height="88" viewBox="0 0 55 88" aria-hidden="true"><circle cx="27" cy="17" r="12" fill="#b58483"/><path d="M12 34 Q27 26 42 34 L46 65 L34 65 L32 85 L22 85 L20 65 L8 65 Z" fill="#748775"/></svg><p>A little space for the wanderer.<br>Character and equipment will rest here someday — not yet.</p>';inventory.insertBefore(characterRegion,inventoryRows);inventoryHint.textContent='I / Esc to close · click food to eat · click a carried block to pin · the world keeps moving';
+const characterRegion=document.createElement('aside');characterRegion.id='inventory-character';characterRegion.setAttribute('aria-label','Your outfit');inventory.insertBefore(characterRegion,inventoryRows);inventoryHint.textContent='I / Esc to close · click food to eat · click garments to wear · the world keeps moving';
 
 // Light & Song: Relic, November 23 2026. Session milestones use ledger continuity identity.
 const islandArcs=new Map();
@@ -1073,3 +1080,64 @@ function tickForagers(dt){
  }
 }
 const foragerSky=updateSky;updateSky=function(dt){foragerSky(dt);tickForagers(dt);};
+
+// Stage Fourteen, batch one: comfort, not a new peril.
+function tickWarmth(dt){
+ if(!world.waking){comfort.cold=0;comfort.wet=0;return;}
+ if(!Number.isFinite(dt)||dt<=0||player.mistCatch||crossing.veil)return;
+ const wet=player.immersion();if(wet.torso||wet.head)comfort.wet=WARMTH.wetSeconds;
+ else comfort.wet=Math.max(0,comfort.wet-dt);
+ const time=(rhythm.day-1)*DAY_SECONDS+rhythm.seconds;
+ comfort.cold=coldStep(comfort.cold,dt,{seconds:rhythm.seconds,shower:showerStrength(time),frost:biomeAt(player.x,player.z,seed)==='Frost Peaks',wet:comfort.wet>0,hearth:nearLitHearth(),worn});
+}
+function echoMoment(id){logLine('A moment kept: '+(MOMENT_LABELS[id]||id)+'.');}
+function recordMoment(id){
+ const name=id==='guideNamed'?crossing.name:id==='characterNamed'?session.name:undefined;
+ if(!keepMoment(moments,id,rhythm.day,world.waking?dayPhase(rhythm.seconds):phase.value>=.22?'dawn':'night',name))return false;
+ echoMoment(id);saveGame();return true;
+}
+function recordArcMoments(){const a=arcFor();for(const id of ['firstFire','monolith'])if(a[id])recordMoment(id);}
+const momentLight=ritual.light;ritual.light=function(){const ok=momentLight.call(this);recordArcMoments();return ok;};
+const momentRitual=updateRitual;updateRitual=function(dt){momentRitual(dt);recordArcMoments();};
+const momentGuest=guestMessage;guestMessage=function(m){momentGuest(m);recordArcMoments();};
+function wearGarment(name){
+ const g=GARMENTS[name];if(!g||!session.started||!world.waking||nourishment.faintTime||!(player.materials[name]>0))return false;
+ const old=worn[g.slot];player.materials[name]--;if(old)player.materials[old]=(player.materials[old]||0)+1;
+ worn[g.slot]=name;recordMoment('firstGarmentWorn');refreshOutfit();refreshInventory();saveGame();return true;
+}
+function removeGarment(slot){
+ if(!session.started||!world.waking||nourishment.faintTime||!['body','head'].includes(slot)||!worn[slot])return false;
+ const name=worn[slot];worn[slot]=null;player.materials[name]=(player.materials[name]||0)+1;
+ refreshOutfit();refreshInventory();saveGame();return true;
+}
+function refreshOutfit(){
+ characterRegion.replaceChildren();characterRegion.style.flexWrap='wrap';characterRegion.style.gap='10px';
+ for(const slot of ['head','body']){
+  const name=worn[slot],b=document.createElement('button');b.type='button';b.disabled=!name;
+  b.textContent=slot+': '+(name||'nothing worn')+(name?' · take off':'');
+  b.style.cssText='max-width:240px;padding:12px;color:#514c49;background:#f7ecd7;border:2px solid '+(name?'#'+GARMENTS[name].color.toString(16):'#aa9475')+';border-radius:8px;font:13px Georgia';
+  b.onclick=()=>removeGarment(slot);characterRegion.append(b);
+ }
+}
+function garmentPart(w,h,d,color){
+ const geometry=new THREE.BoxGeometry(w,h,d),colors=[],n=geometry.attributes.normal;
+ const tint=new THREE.Color(color);for(let i=0;i<n.count;i++){const shade=.84+.16*Math.max(0,n.getY(i));colors.push(tint.r*shade,tint.g*shade,tint.b*shade);}
+ geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+ return new THREE.Mesh(geometry,new THREE.MeshLambertMaterial({vertexColors:true}));
+}
+function dressAvatar(a,state){
+ const outfit=cleanWorn(state),key=JSON.stringify(outfit);if(a.outfitKey===key)return;a.outfitKey=key;
+ while(a.outfit.children.length){const c=a.outfit.children[0];a.outfit.remove(c);c.geometry.dispose();c.material.dispose();}
+ if(outfit.body){const c=garmentPart(.61,.72,.14,GARMENTS[outfit.body].color);c.position.set(0,.99,-.23);a.outfit.add(c);const collar=garmentPart(.58,.13,.39,GARMENTS[outfit.body].color);collar.position.set(0,1.30,0);a.outfit.add(collar);}
+ if(outfit.head){const brim=garmentPart(.49,.065,.46,GARMENTS[outfit.head].color);brim.position.y=1.72;const crown=garmentPart(.37,.17,.35,GARMENTS[outfit.head].color);crown.position.y=1.81;a.outfit.add(brim,crown);}
+}
+const comfortSnapshot=personalSnapshot;personalSnapshot=function(){return {...comfortSnapshot(),worn:{...worn},moments:moments.map(m=>({...m}))};};
+const comfortLoad=loadPersonal;loadPersonal=function(s,position=false){
+ const ok=comfortLoad(s,position);if(!ok)return false;
+ worn=cleanWorn(s.worn);moments=(s.moments||[]).map(m=>({...m}));comfort.cold=0;comfort.wet=0;
+ backfillMoments(s,moments,echoMoment);refreshOutfit();return true;
+};
+refreshOutfit();window.grin.saving.personalSnapshot=personalSnapshot;
+window.grin.comfort={state:comfort,constants:WARMTH,garments:GARMENTS,wear:wearGarment,remove:removeGarment,get worn(){return {...worn};}};
+window.grin.moments={record:recordMoment,get records(){return moments.map(m=>({...m}));}};
+window.grin.netValidation.guest=m=>guestMessage(m);
