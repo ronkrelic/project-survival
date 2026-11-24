@@ -8,6 +8,14 @@ export class World {
   this.scene=scene;this.seed=seed;this.chunks=new Map();this.pending=[];this.ready=[];this.busy=false;this.loaded=false;this.dirty=new Set();
   this.farmland=new Map();this.waking=false;this.edits=new Map();this.wanted=new Set();
   this.material=new THREE.MeshBasicMaterial({vertexColors:true});
+  // Separate pass: never run water through the terrain's luminous-flora heuristic.
+  this.waterUniforms={waterTime:{value:0},waterNight:{value:0},waterSeed:{value:seed}};
+  this.waterMaterial=new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:.45,depthWrite:false,side:THREE.DoubleSide});
+  this.waterMaterial.onBeforeCompile=shader=>{
+   Object.assign(shader.uniforms,this.waterUniforms);
+   shader.vertexShader='varying vec3 waterWorld;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nwaterWorld=(modelMatrix*vec4(position,1.)).xyz;');
+   shader.fragmentShader='uniform float waterTime;uniform float waterNight;uniform float waterSeed;varying vec3 waterWorld;\n'+shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat shimmer=sin(waterWorld.x*.7+waterWorld.z*.43+waterTime*.55+waterSeed)*.035+sin(waterWorld.z*.91-waterTime*.38)*.02;diffuseColor.rgb=(diffuseColor.rgb+shimmer)*mix(vec3(1.05,1.04,1.),vec3(.34,.48,.65),waterNight);');
+  };
   // Fixed 8x8 envelope, loaded once. Never follow the player or evict chunks.
   for(let cz=MIN_CHUNK;cz<=MAX_CHUNK;cz++)for(let cx=MIN_CHUNK;cx<=MAX_CHUNK;cx++)this.pending.push({cx,cz});
   this.pending.sort((a,b)=>a.cx*a.cx+a.cz*a.cz-b.cx*b.cx-b.cz*b.cz);
@@ -19,11 +27,12 @@ export class World {
   const key=this.key(data.cx,data.cz);if(this.waking&&!this.wanted.has(key))return;const old=this.chunks.get(key);
   if(old&&data.revision!==old.revision)return;
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(data.positions,3));g.setAttribute('color',new THREE.BufferAttribute(data.colors,3));g.computeBoundingSphere();
-  if(old){old.object.geometry.dispose();old.object.geometry=g;old.meshedRevision=data.revision;return;}
+  const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.BufferAttribute(data.waterPositions,3));wg.setAttribute('color',new THREE.BufferAttribute(data.waterColors,3));wg.computeBoundingSphere();
+  if(old){old.object.geometry.dispose();old.object.geometry=g;old.waterObject.geometry.dispose();old.waterObject.geometry=wg;old.meshedRevision=data.revision;return;}
   if(this.waking&&data.blocks){for(const i of this.edits.get(key)||[])data.blocks[i]=0;
-   for(let z=0;z<SIZE;z++)for(let x=0;x<SIZE;x++){let sun=15;for(let y=HEIGHT-1;y>=0;y--){const i=index(x,y,z);if(data.blocks[i])sun=0;data.light[i]=sun;}}
+   for(let z=0;z<SIZE;z++)for(let x=0;x<SIZE;x++){let sun=15;for(let y=HEIGHT-1;y>=0;y--){const i=index(x,y,z);if(data.blocks[i]&&data.blocks[i]!==25)sun=0;data.light[i]=sun;}}
   }
-  const object=new THREE.Mesh(g,this.material);this.scene.add(object);this.chunks.set(key,{...data,revision:0,meshedRevision:0,positions:null,colors:null,object});
+  const object=new THREE.Mesh(g,this.material),waterObject=new THREE.Mesh(wg,this.waterMaterial);waterObject.renderOrder=1;this.scene.add(object,waterObject);this.chunks.set(key,{...data,revision:0,meshedRevision:0,positions:null,colors:null,waterPositions:null,waterColors:null,object,waterObject});
   if(this.waking){const c=this.chunks.get(key);if(this.edits.has(key)){c.revision++;this.dirty.add(key);}for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dz)continue;const k=this.key(data.cx+dx,data.cz+dz),n=this.chunks.get(k);if(n){n.revision++;this.dirty.add(k);}}}
  }
  till(x,y,z){
@@ -42,7 +51,7 @@ export class World {
   const cx=Math.floor(x/SIZE),cz=Math.floor(z/SIZE),c=this.chunks.get(this.key(cx,cz));
   const i=index(x-cx*SIZE,y,z-cz*SIZE);c.blocks[i]=0;
   if(this.waking){const k=this.key(cx,cz);if(!this.edits.has(k))this.edits.set(k,new Set());this.edits.get(k).add(i);}
-  let sun=15;for(let yy=HEIGHT-1;yy>=0;yy--){const i=index(x-cx*SIZE,yy,z-cz*SIZE);if(c.blocks[i])sun=0;c.light[i]=sun;}
+  let sun=15;for(let yy=HEIGHT-1;yy>=0;yy--){const i=index(x-cx*SIZE,yy,z-cz*SIZE);if(c.blocks[i]&&c.blocks[i]!==25)sun=0;c.light[i]=sun;}
   this.farmland.delete((this.waking?'waking':'island')+':'+[x,y,z].join(':'));appendDelta({x,y,z},id,'remove');
   // Include diagonal neighbours for corner ambient occlusion as well as faces.
   for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
@@ -61,13 +70,13 @@ export class World {
  }
  enterWaking(){
   this.waking=true;this.pending=[];this.ready=[];this.dirty.clear();
-  for(const c of this.chunks.values()){this.scene.remove(c.object);c.object.geometry.dispose();}this.chunks.clear();
+  for(const c of this.chunks.values()){this.scene.remove(c.object,c.waterObject);c.object.geometry.dispose();c.waterObject.geometry.dispose();}this.chunks.clear();
   this.stream(0,0);
  }
  stream(x,z){
   const cx=Math.floor(x/SIZE),cz=Math.floor(z/SIZE);this.wanted.clear();
   for(let dz=-3;dz<=3;dz++)for(let dx=-3;dx<=3;dx++)this.wanted.add(this.key(cx+dx,cz+dz));
-  for(const [k,c] of this.chunks)if(!this.wanted.has(k)){this.scene.remove(c.object);c.object.geometry.dispose();this.chunks.delete(k);this.dirty.delete(k);}
+  for(const [k,c] of this.chunks)if(!this.wanted.has(k)){this.scene.remove(c.object,c.waterObject);c.object.geometry.dispose();c.waterObject.geometry.dispose();this.chunks.delete(k);this.dirty.delete(k);}
   this.pending=this.pending.filter(c=>this.wanted.has(this.key(c.cx,c.cz)));
   const queued=new Set(this.pending.map(c=>this.key(c.cx,c.cz)));
   if(this.inflight)queued.add(this.key(this.inflight.cx,this.inflight.cz));
