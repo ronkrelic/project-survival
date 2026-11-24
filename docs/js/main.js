@@ -146,6 +146,43 @@ const glints=[];for(const [x,z] of sparkNodes){const g=new THREE.Mesh(new THREE.
 const aurora=new THREE.Group();aurora.position.set(12,87,-62);scene.add(aurora);
 for(let i=0;i<3;i++){const geo=new THREE.PlaneGeometry(44,23,24,10),mat=new THREE.MeshBasicMaterial({color:i%2?0xad91cb:0x81c6bc,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false,fog:false});const ribbon=new THREE.Mesh(geo,mat);ribbon.rotation.y=i*Math.PI/3;ribbon.position.y=i*7;aurora.add(ribbon);}
 
+// Aurora is visual only: no terrain/water light, saved flag, or new network state.
+const monolithGlow=new THREE.Mesh(new THREE.BoxGeometry(5.12,47.12,3.12),new THREE.MeshBasicMaterial({color:0x81c6bc,transparent:true,opacity:0,depthWrite:false,fog:false,blending:THREE.AdditiveBlending}));
+monolithGlow.position.set(12.5,terrainHeight(12,-62)+24.5,-61.5);monolithGlow.renderOrder=2;monolithGlow.visible=false;scene.add(monolithGlow);
+let auroraVisible=false,islandGather=0;
+function auroraEligible(day,worldSeed){return hash(day,401,worldSeed)<1/3;}
+function auroraEnvelope(seconds){
+ // Night settles at 600; gather to 630, hold to 780, dissolve by 810.
+ const t=Math.max(0,Math.min(1,(seconds-600)/30,(810-seconds)/30));
+ return t*t*(3-2*t);
+}
+function auroraClearNight(day,worldSeed){
+ const begin=(day-1)*840+600,end=(day-1)*840+810;
+ for(let w=Math.floor(begin/1680);w<=Math.floor(end/1680);w++){
+  const start=w*1680+180+hash(w,301,worldSeed)*600,duration=180+hash(w,302,worldSeed)*60;
+  if(start<end&&start+duration>begin)return false;
+ }
+ return true;
+}
+function updateAurora(dt){
+ const safe=session.started&&player.awake&&!nourishment.faintTime&&!player.mistCatch&&!crossing.veil;
+ let strength=0,time=ritual.clock;
+ if(world.waking){
+  // Fixed seed anchor and shared-clock animation: never follows a player's position.
+  aurora.position.set((hash(0,402,seed)-.5)*160,220,(hash(0,403,seed)-.5)*160);aurora.scale.setScalar(8);
+  time=(rhythm.day-1)*DAY_SECONDS+rhythm.seconds;
+  // Frost Peaks has continuous local snow, not a separate scheduled shower.
+  // It obscures this sky locally; eligibility/anchor remain identical for peers.
+  if(safe&&biomeAt(player.x,player.z,seed)!=='Frost Peaks'&&auroraEligible(rhythm.day,seed)&&auroraClearNight(rhythm.day,seed))strength=auroraEnvelope(rhythm.seconds);
+ }else{
+  aurora.position.set(12,87,-62);aurora.scale.setScalar(1);
+  if(safe&&ritual.lit&&arcFor().firstFire&&arcFor().monolith){islandGather+=Math.max(0,Number.isFinite(dt)?dt:0);strength=Math.min(1,islandGather/30);}
+ }
+ auroraVisible=strength>0;aurora.visible=auroraVisible;
+ monolithGlow.visible=!world.waking&&auroraVisible;monolithGlow.material.opacity=.14*strength;
+ aurora.children.forEach((r,i)=>{r.renderOrder=2;r.material.opacity=.12*strength;const p=r.geometry.attributes.position;for(let j=0;j<p.count;j++)p.setZ(j,Math.sin(p.getX(j)*.16+time*.22+i+p.getY(j)*.06)*2.7);p.needsUpdate=true;});
+}
+
 function startCrackle(){try{sound.unlock();const audio=sound.context;if(!audio)return;audio.resume().catch(()=>{});const buffer=audio.createBuffer(1,audio.sampleRate*3,audio.sampleRate),data=buffer.getChannelData(0);let low=0;for(let i=0;i<data.length;i++){low=low*.985+(Math.random()*2-1)*.015;data[i]=low*2+(Math.random()<.0005?(Math.random()-.5)*.4:0);}const noise=audio.createBufferSource(),filter=audio.createBiquadFilter(),gain=audio.createGain();noise.buffer=buffer;noise.loop=true;filter.type='lowpass';filter.frequency.value=900;gain.gain.value=.055;noise.connect(filter).connect(gain).connect(sound.sfx);noise.start();ritual.crackle={audio,noise,gain};}catch{}}
 
 function updateRitual(dt){if(world.waking)return;ritual.clock+=dt;const near=Math.hypot(player.x-ritual.x,player.z-ritual.z)<5;
@@ -155,7 +192,7 @@ function updateRitual(dt){if(world.waking)return;ritual.clock+=dt;const near=Mat
  flames.forEach((f,i)=>{f.visible=ritual.lit;f.scale.set(1+Math.sin(ritual.clock*3+i)*.1,1+Math.sin(ritual.clock*4+i)*.16,1);});fireLight.intensity=ritual.lit?5+Math.sin(ritual.clock*5)*.3+Math.max(0,1-ritual.elapsed)*8:0;
  sparks.forEach((s,i)=>{s.visible=ritual.lit;const a=(ritual.clock*.3+i/12)%1;s.position.set(Math.sin(i*5+a)*.4,.3+a*2,Math.cos(i*7+a)*.4);s.material.opacity=1-a;});
  glints.forEach((g,i)=>{const [x,z]=sparkNodes[i];g.visible=world.block(x,terrainHeight(x,z),z)===10;g.material.opacity=.25+.2*Math.sin(ritual.clock*1.7+i);});
- aurora.visible=ritual.lit;aurora.children.forEach((r,i)=>{r.material.opacity=.12*Math.min(1,ritual.elapsed/30);const p=r.geometry.attributes.position;for(let j=0;j<p.count;j++){const x=p.getX(j),y=p.getY(j);p.setZ(j,Math.sin(x*.16+ritual.clock*.22+i+y*.06)*2.7);}p.needsUpdate=true;});
+
 }
 
 
@@ -703,7 +740,7 @@ function updateWeatherPool(pool,time,fade){
 }
 
 const islandSky=updateSky;
-function tickRhythm(dt){if(!world.waking){clockReadout.hidden=true;nightStars.visible=false;skyDress.visible=false;return;}clockReadout.hidden=false;nightStars.visible=true;if(session.started&&Number.isFinite(dt)&&dt>0){rhythm.seconds+=dt;while(rhythm.seconds>=DAY_SECONDS){rhythm.seconds-=DAY_SECONDS;rhythm.day++;saveGame();}}const s=rhythm.seconds,night=s>=600;const light=s<60?.35+.65*s/60:s<540?1:s<600?1-.74*(s-540)/60:s<780?.26:.26+.09*(s-780)/60;world.waterUniforms.waterTime.value=(rhythm.day-1)*DAY_SECONDS+s;world.waterUniforms.waterNight.value=1-light;phase.value=light;phase.name=s<60?'Dawn':s<540?'Daylight':s<600?'Dusk':s<780?'Night':'Dawn';sky.material.uniforms.progress.value=light;fogBase.copy(nightFog).lerp(dawnFog,light);if(world.material.userData.shader){world.material.userData.shader.uniforms.phaseLight.value=light;world.material.userData.shader.uniforms.firstFire.value=0;world.material.userData.shader.uniforms.wakingNight.value=1-light;}nightStars.position.copy(camera.position);updateSkyDressing(s);aurora.visible=light<.8;aurora.position.set(player.x,player.y+48,player.z-65);aurora.userData.wakingClock=(aurora.userData.wakingClock||0)+(Number.isFinite(dt)?Math.max(0,dt):0);aurora.children.forEach((r,i)=>{r.material.opacity=.12*(1-light);const p=r.geometry.attributes.position;for(let j=0;j<p.count;j++)p.setZ(j,Math.sin(p.getX(j)*.16+aurora.userData.wakingClock*.22+i+p.getY(j)*.06)*2.7);p.needsUpdate=true;});wakingFireLight.intensity=1+(1-light)*2;wakingFlame.material.opacity=.7+(1-light)*.25;const minutes=Math.floor(s<600?360+s/600*720:1080+(s-600)/240*720)%1440;clockReadout.textContent='Day '+rhythm.day+' · '+String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0')+' · '+phase.name;if(session.started&&player.awake&&s>=540&&s<780&&!arcFor().firstDusk){
+function tickRhythm(dt){if(!world.waking){clockReadout.hidden=true;nightStars.visible=false;skyDress.visible=false;return;}clockReadout.hidden=false;nightStars.visible=true;if(session.started&&Number.isFinite(dt)&&dt>0){rhythm.seconds+=dt;while(rhythm.seconds>=DAY_SECONDS){rhythm.seconds-=DAY_SECONDS;rhythm.day++;saveGame();}}const s=rhythm.seconds,night=s>=600;const light=s<60?.35+.65*s/60:s<540?1:s<600?1-.74*(s-540)/60:s<780?.26:.26+.09*(s-780)/60;world.waterUniforms.waterTime.value=(rhythm.day-1)*DAY_SECONDS+s;world.waterUniforms.waterNight.value=1-light;phase.value=light;phase.name=s<60?'Dawn':s<540?'Daylight':s<600?'Dusk':s<780?'Night':'Dawn';sky.material.uniforms.progress.value=light;fogBase.copy(nightFog).lerp(dawnFog,light);if(world.material.userData.shader){world.material.userData.shader.uniforms.phaseLight.value=light;world.material.userData.shader.uniforms.firstFire.value=0;world.material.userData.shader.uniforms.wakingNight.value=1-light;}nightStars.position.copy(camera.position);updateSkyDressing(s);wakingFireLight.intensity=1+(1-light)*2;wakingFlame.material.opacity=.7+(1-light)*.25;const minutes=Math.floor(s<600?360+s/600*720:1080+(s-600)/240*720)%1440;clockReadout.textContent='Day '+rhythm.day+' · '+String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0')+' · '+phase.name;if(session.started&&player.awake&&s>=540&&s<780&&!arcFor().firstDusk){
 arcFor().firstDusk=true;
 guide.say('first-dusk',"The sun is setting. Your first dusk out here. The dark isn't empty, you know that now. Light something warm, and I'll keep watch with you.");
 saveGame();
@@ -735,7 +772,7 @@ function undergroundMusic(){
  for(let y=Math.ceil(player.y+1.8);y<=surface;y++)if(world.block(x,y,z)&&world.block(x,y,z)!==25)return true;
  return false;
 }
-const musicHUD=updateHUD;updateHUD=function(dt){musicHUD(dt);if(session.started)music.update({waking:world.waking,biome:world.waking?biomeAt(player.x,player.z,seed):'Island',seconds:rhythm.seconds,phase:phase.name,nearHearth:nearLitHearth(),underground:undergroundMusic()});};
+const musicHUD=updateHUD;updateHUD=function(dt){musicHUD(dt);updateAurora(dt);if(session.started)music.update({waking:world.waking,biome:world.waking?biomeAt(player.x,player.z,seed):'Island',seconds:rhythm.seconds,phase:phase.name,nearHearth:nearLitHearth(),underground:undergroundMusic(),auroraVisible});};
 const muteButton=document.createElement('button');muteButton.id='mute-sound';muteButton.textContent='Sound on';muteButton.title='Mute game sounds';muteButton.setAttribute('aria-pressed','false');muteButton.style.cssText='position:fixed;right:20px;top:234px;padding:7px 12px;color:#d8c9b8;background:#292938cc;border:1px solid #99857c55;border-radius:10px;font:12px Georgia;z-index:13';muteButton.onclick=()=>{sound.unlock();sound.mute();};document.body.append(muteButton);sound.mute(sound.muted);addEventListener('pointerdown',()=>sound.unlock(),{passive:true});addEventListener('keydown',e=>{if(!e.repeat)sound.unlock();});
 startCrackle=function(){sound.unlock();};
 const soundEat=nourishment.eat.bind(nourishment);nourishment.eat=function(){const ok=soundEat();if(ok)sound.play('eat',320,.18,.07);return ok;};const soundCooked=eatCooked;eatCooked=function(name){const ok=soundCooked(name);if(ok)sound.play('eat',320,.18,.07);return ok;};window.grin.cooking.eat=name=>eatCooked(name);
@@ -796,7 +833,7 @@ updateRitual=function(dt){arcRitual(dt);if(world.waking)return;const a=arcFor();
   if(aiming&&mining.held&&document.pointerLockElement===renderer.domElement){a.tend=(a.tend||0)+dt;mining.elapsed=0;if(a.tend>=2){a.tend=0;if(net.mode==='guest'){if(net.ready)send(net.host,{type:'fire-request'});}else a.firstFire=true;}}else a.tend=0;
  }
  if(a.firstFire&&!a.monolith&&Math.hypot(player.x-12,player.z+62)<4){if(net.mode==='guest'){if(net.ready&&ritual.clock>(a.touchAfter||0)){a.touchAfter=ritual.clock+2;send(net.host,{type:'arc-touch'});}}else {a.monolith=true;net.monolith=true;}}
- a.named=crossing.named;a.crossed=crossing.crossed;aurora.visible=ritual.lit&&a.monolith;
+ a.named=crossing.named;a.crossed=crossing.crossed;
 };
 const arcCrossing=updateCrossing;updateCrossing=function(dt){if(!world.waking&&(!arcFor().firstFire||!arcFor().monolith))return;arcCrossing(dt);arcFor().named=crossing.named;arcFor().crossed=crossing.crossed;};
 const arcHost=hostMessage;hostMessage=function(c,m){if(m?.type==='fire-request'||m?.type==='arc-touch'){const p=net.people.get(c.peer);if(!c.psName||!c.psIdentity||!p||p.realm!=='island')return;const a=arcFor(c.psIdentity);
