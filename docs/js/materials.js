@@ -16,6 +16,8 @@ export const materials=Object.freeze({
  16:{name:'dryfiber tuft',yield:'dryfiber',seconds:.4,color:0x97aa83},
  10:{name:'sparkstone',yield:'sparkstone',seconds:1.5,color:0xe3dfb9},
  17:{name:'tilled earth',yield:'earth',seconds:.4,color:0x69574d},
+ 22:{name:'door-closed',yield:'door',seconds:.7,color:0xad8c70},
+ 23:{name:'door-open',yield:'door',seconds:.7,color:0xad8c70},
  21:{name:'fence',yield:'fence',seconds:.6,color:0xad8c70},
  20:{name:'lantern',yield:'lantern',seconds:.4,color:0xe3dfb9},
  19:{name:'constructed earth',yield:'earth',seconds:.4,color:0x9b7c6c},
@@ -23,3 +25,6 @@ export const materials=Object.freeze({
  9:{name:'foundation stone',seconds:Infinity,color:0x8c7378}
 });
 export const breakable=id=>Number.isFinite(materials[id]?.seconds);
+
+// Open doors retain a targetable voxel but do not support or obstruct a body.
+export const isSolid=id=>!!id&&id!==23;

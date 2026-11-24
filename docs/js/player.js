@@ -1,3 +1,4 @@
+import {isSolid} from './materials.js';
 // PC only: pointer lock, metres, 1.8m body and 1.6m standing eyes.
 export class Player {
  constructor(camera,canvas,world,spawn) {
@@ -26,14 +27,14 @@ export class Player {
   for(let ix=Math.floor(x-r);ix<=Math.floor(x+r);ix++)
    for(let iz=Math.floor(z-r);iz<=Math.floor(z+r);iz++)
     for(let iy=Math.floor(y+.001);iy<=Math.floor(y+1.799);iy++)
-     if(this.world.block(ix,iy,iz)!==0)return false;
+     if(isSolid(this.world.block(ix,iy,iz)))return false;
   return true;
  }
  move(dx,dz) {
   const x=this.x+dx,z=this.z+dz;
   if(this.clear(x,this.y,z)){this.x=x;this.z=z;return;}
   // Barriers must not be climbed by the terrain's automatic whole-cell step.
-  for(let ix=Math.floor(x-.27);ix<=Math.floor(x+.27);ix++)for(let iz=Math.floor(z-.27);iz<=Math.floor(z+.27);iz++)for(let iy=Math.floor(this.y+.001);iy<=Math.floor(this.y+1.799);iy++)if(this.world.block(ix,iy,iz)===21)return;
+  for(let ix=Math.floor(x-.27);ix<=Math.floor(x+.27);ix++)for(let iz=Math.floor(z-.27);iz<=Math.floor(z+.27);iz++)for(let iy=Math.floor(this.y+.001);iy<=Math.floor(this.y+1.799);iy++)if([21,22].includes(this.world.block(ix,iy,iz)))return;
   // Step one whole voxel only with grounded feet and head clearance.
   if(this.grounded&&this.clear(this.x,this.y+1,this.z)&&this.clear(x,this.y+1,z)){
    this.x=x;this.z=z;this.y+=1;this.vy=0;
@@ -41,13 +42,13 @@ export class Player {
  }
  // Only an empty column is the void: terrace drops keep their normal gravity.
  hasGround(x,z) {
-  for(let y=111;y>=0;y--)if(this.world.block(Math.floor(x),y,Math.floor(z)))return true;
+  for(let y=111;y>=0;y--)if(isSolid(this.world.block(Math.floor(x),y,Math.floor(z))))return true;
   return false;
  }
  landing(x,z) {
-  for(let y=111;y>=0;y--)if(this.world.block(Math.floor(x),y,Math.floor(z))){
+  for(let y=111;y>=0;y--)if(isSolid(this.world.block(Math.floor(x),y,Math.floor(z)))){
    const feet=y+1;
-   if(this.clear(x,feet,z)&&[-.27,.27].every(dx=>[-.27,.27].every(dz=>this.world.block(Math.floor(x+dx),y,Math.floor(z+dz)))))return {x,y:feet,z};
+   if(this.clear(x,feet,z)&&[-.27,.27].every(dx=>[-.27,.27].every(dz=>isSolid(this.world.block(Math.floor(x+dx),y,Math.floor(z+dz))))))return {x,y:feet,z};
   }
   return null;
  }
