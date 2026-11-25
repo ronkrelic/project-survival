@@ -7,6 +7,7 @@ import {createMusic} from './music.js';
 import {GARMENTS,WARMTH,coldStep,cleanWorn,validWorn,validMoments,keepMoment,backfillMoments,dayPhase,MOMENT_LABELS} from './comfort.js';
 import {validPlaces,changePlace,forgetPlace,projectPlaces,createPersonalPages,PLACE_MOMENT} from './memories.js';
 import {loadAtlas,atlasTexture} from './terrain-atlas.js';
+import {createGuideModel} from './guide-model.js';
 const terrainAtlasReady=loadAtlas();
 let personalPages=null;
 // Capture before existing game shortcuts, including chat and movement.
@@ -72,6 +73,7 @@ const halo=new THREE.Mesh(new THREE.SphereGeometry(.32,12,8),new THREE.MeshBasic
 // Two translucent petals suggest a fairy without making a tiny person or a beacon.
 const wings=[];for(const side of [-1,1]){const wing=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),new THREE.MeshBasicMaterial({color:0xf3c8af,transparent:true,opacity:.12,depthWrite:false}));wing.scale.set(.18,.07,.025);wing.position.set(side*.16,.05,0);guide.body.add(wing);wings.push(wing);}
 guide.light=new THREE.PointLight(0xffbd7c,1.3,22,1.4);guide.body.add(guide.light);scene.add(guide.body);
+const guideVisual=createGuideModel(THREE,{body:guide.body,fallback:[ember,halo,...wings]});
 const guideLine=document.getElementById('guide-line');
 guide.say=function(id,text){if(this.seen.has(id))return;
  if(!world.waking&&!this.lessons.done&&['gather','cold-circle','enough-fire','monolith','nudge','way-open','ask-name'].includes(id)){this.lessons.deferred.set(id,text);return;}this.seen.add(id);this.queue.push({id,text,duration:Math.max(5,text.split(/\s+/).length*.32+2)});};
@@ -304,7 +306,7 @@ function updateHUD(dt){
 }
 
 let last=performance.now();
-function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;if(terrainTexturesReady)world.update(player.x,player.z);if(world.loaded&&!session.started){wakeButton.disabled=false;wakeHint.textContent='Ready when you are.';}if(world.loaded&&session.started){nourishment.update(dt);if(!crossing.veil){if(nourishment.faintTime)player.floatUncontrolled(dt,true);else player.update(dt);}updateRitual(dt);updateCrossing(dt);if(!crossing.veil&&!nourishment.faintTime)mining.update(dt);attention.update();guide.update(dt);}updateSky(dt);updateWeather(rhythm.seconds);updateHUD(dt);
+function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;if(terrainTexturesReady)world.update(player.x,player.z);if(world.loaded&&!session.started){wakeButton.disabled=false;wakeHint.textContent='Ready when you are.';}if(world.loaded&&session.started){if(guideVisual.state==='idle')void guideVisual.request();nourishment.update(dt);if(!crossing.veil){if(nourishment.faintTime)player.floatUncontrolled(dt,true);else player.update(dt);}updateRitual(dt);updateCrossing(dt);if(!crossing.veil&&!nourishment.faintTime)mining.update(dt);attention.update();guideVisual.restoreFallback();guide.update(dt);guideVisual.update(dt,guide.clock);}updateSky(dt);updateWeather(rhythm.seconds);updateHUD(dt);
  const rim=world.waking?0:crossing.manifest>0&&player.z<-96?0:THREE.MathUtils.smoothstep(islandRadius(player.x,player.z),.55,1);const held=player.mistStrength||0;scene.fog.density=.012-phase.value*.004+rim*.034+held*.075;
  scene.fog.color.copy(fogBase).lerp(new THREE.Color(0xffe5cf),held*.55);
  sky.position.copy(camera.position);renderer.render(scene,camera);}
