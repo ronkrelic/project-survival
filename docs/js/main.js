@@ -503,7 +503,7 @@ const beforeCraftLessons=guide.updateLessons.bind(guide);
 guide.updateLessons=function(){beforeCraftLessons();const l=craftingLesson;if(!world.waking||!session.started||!player.awake||l.stage==='done')return;if(craftedCount>0){if(l.stage==='waiting'){l.stage='done';return;}this.say('craft-ack',"There. Made by your own hands now. The world will notice.");l.stage='ack';}else if(l.stage==='waiting'&&!this.active&&!this.queue.length&&this.cooldown===0){this.say('craft-teach',"The island gave freely. Beyond the bridge, some things ask for more than hands. Let me show you how to make what you'll need.");l.stage='teaching';}if(l.stage==='teaching'&&this.completed.has('craft-teach')){this.say('craft-controls','Hold a tree to gather wood. Three pieces become a wooden tool. Press C to shape one.');l.stage='crafting';}if(l.stage==='ack'&&this.completed.has('craft-ack'))l.stage='done';};
 window.grin.crafting.lesson=craftingLesson;
 
-// Session-only crops: deliberately local to each player; soil is shared below.
+// Crops share the host ledger; separate THREE groups remain presentation only.
 import {targetBlock} from './mining.js';
 import {biomeAt} from './generation.js';
 const crops=new Map(),wildHarvested=new Set();let farmClock=0;
@@ -511,10 +511,27 @@ const cropKey=(x,y,z)=>[x,y,z].join(':');
 function cropStage(p){return Math.min(3,Math.floor((farmClock-p.born+1e-6)/60));}
 function createCrop(x,y,z,wild=false){const key=cropKey(x,y,z);if(crops.has(key))return crops.get(key);const body=new THREE.Group();scene.add(body);const p={key,x,y,z,wild,born:wild?farmClock-180:farmClock,body,stage:-1};crops.set(key,p);drawCrop(p);return p;}
 function drawCrop(p){const stage=cropStage(p);if(stage===p.stage)return;p.stage=stage;while(p.body.children.length){const c=p.body.children[0];p.body.remove(c);c.geometry.dispose();c.material.dispose();}for(let i=0;i<3;i++){const h=.10+stage*.15,stem=new THREE.Mesh(new THREE.BoxGeometry(.08,h,.10),new THREE.MeshBasicMaterial({color:stage===3?0xc9ae76:0x7eaa83}));stem.position.set((i-1)*.22,h/2,((i%2)-.5)*.22);p.body.add(stem);if(stage===3){const fruit=new THREE.Mesh(new THREE.IcosahedronGeometry(.14,0),new THREE.MeshBasicMaterial({color:0xe0b384}));fruit.position.copy(stem.position);fruit.position.y=h;p.body.add(fruit);}}p.body.position.set(p.x+.5,p.y+1.015,p.z+.5);}
-function updateCrops(dt){farmClock+=dt;if(!world.waking){for(const p of crops.values())p.body.visible=false;return;}for(let a=Math.floor(player.x/12)-2;a<=Math.floor(player.x/12)+2;a++)for(let b=Math.floor(player.z/12)-2;b<=Math.floor(player.z/12)+2;b++){const x=a*12+5,z=b*12+5,y=wakingHeight(x,z,seed),key=cropKey(x,y,z),biome=biomeAt(x,z,seed);if(hash(a,b,seed+301)>(biome==='Meadow'?.65:biome==='Forest'?.14:0)||wildHarvested.has(key)||![1,11].includes(world.block(x,y,z))||world.block(x,y+1,z))continue;createCrop(x,y,z,true);}for(const [key,p] of crops){p.body.visible=world.waking&&Math.hypot(p.x-player.x,p.z-player.z)<65&&!!world.block(p.x,p.y,p.z);if(!world.block(p.x,p.y,p.z)&&world.chunks.has(world.key(Math.floor(p.x/32),Math.floor(p.z/32)))){disposeCrop(p);crops.delete(key);continue;}drawCrop(p);}}
+function updateCrops(dt){
+ if(net.mode!=='guest'){
+  farmClock+=dt;
+  const people=net.mode==='host'?[ownState(),...net.people.values()]:[ownState()];
+  for(const p of people.filter(p=>p.realm==='waking'))for(let a=Math.floor(p.x/12)-2;a<=Math.floor(p.x/12)+2;a++)for(let b=Math.floor(p.z/12)-2;b<=Math.floor(p.z/12)+2;b++){
+   const x=a*12+5,z=b*12+5,y=wakingHeight(x,z,seed),key=cropKey(x,y,z),biome=biomeAt(x,z,seed),d={realm:'waking',x,y,z};
+   if(hash(a,b,seed+301)>(biome==='Meadow'?.65:biome==='Forest'?.14:0)||wildHarvested.has(key)||![1,11].includes(cellValue(d))||cellValue({...d,y:y+1}))continue;
+   if(!crops.has(key)){createCrop(x,y,z,true);farmDirty=true;}
+  }
+  for(const [key,p] of crops){
+   const d={realm:'waking',x:p.x,y:p.y,z:p.z};
+   if(!cellValue(d)||cellValue({...d,y:p.y+1})){removeFarmCrop(key);continue;}
+   if(cropStage(p)!==p.stage)farmDirty=true;
+  }
+ }
+ for(const p of crops.values()){p.body.visible=world.waking&&Math.hypot(p.x-player.x,p.z-player.z)<65&&!!world.block(p.x,p.y,p.z);drawCrop(p);}
+ if(net.mode==='host'&&farmDirty)publishFarm();
+}
 function disposeCrop(p){scene.remove(p.body);p.body.traverse(o=>{o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose();});}
-function harvestCrop(p){if(!p||cropStage(p)<3||!world.waking||Math.hypot(player.x-p.x,player.y-p.y,player.z-p.z)>6)return false;player.materials['sunmeadow grain']=(player.materials['sunmeadow grain']||0)+1;player.materials['sunmeadow seeds']=(player.materials['sunmeadow seeds']||0)+2;if(p.wild)wildHarvested.add(p.key);disposeCrop(p);crops.delete(p.key);logLine('Sunmeadow grain, and two small promises for another day.');refreshInventory();return true;}
-function farmInteract(t){if(!world.waking||!t||Math.hypot(player.x-t.x,player.y-t.y,player.z-t.z)>6)return false;const key=cropKey(t.x,t.y,t.z),p=crops.get(key);if(p)return harvestCrop(p);if(world.block(t.x,t.y,t.z)===17){if((player.materials['sunmeadow seeds']||0)<1)return false;player.materials['sunmeadow seeds']--;createCrop(t.x,t.y,t.z);logLine('A seed settles into the dark rows.');return true;}if(['wooden hoe','stone hoe'].includes(player.selectedTool)&&player.materials[player.selectedTool]&&[1,11,14,15,19].includes(t.id)){return tillSoil(t.x,t.y,t.z);}return false;}
+function harvestCrop(p){if(!p||cropStage(p)<3||!world.waking||Math.hypot(player.x-p.x,player.y-p.y,player.z-p.z)>6)return false;return requestFarm(p,'harvest');}
+function farmInteract(t){if(!world.waking||!t||Math.hypot(player.x-t.x,player.y-t.y,player.z-t.z)>6)return false;const key=cropKey(t.x,t.y,t.z),p=crops.get(key);if(p)return harvestCrop(p);if(world.block(t.x,t.y,t.z)===17){if((player.materials['sunmeadow seeds']||0)<1)return false;return requestFarm(t,'plant');}if(['wooden hoe','stone hoe'].includes(player.selectedTool)&&player.materials[player.selectedTool]&&[1,11,14,15,19].includes(t.id)){return tillSoil(t.x,t.y,t.z);}return false;}
 function tillSoil(x,y,z){if(!['wooden hoe','stone hoe'].includes(player.selectedTool)||!player.materials[player.selectedTool]||!world.waking)return false;const d={x,y,z,realm:'waking',op:'till',crafts:craftHistory.slice(),selected:player.selectedTool||null};if(net.mode==='guest'){if(!net.ready)return false;send(net.host,{type:'break-request',delta:d,request:++net.serial});return true;}if(net.mode==='host'){approveBreak(d,net.peer.id);return net.deltas.get(deltaKey(d))?.op==='till';}const ok=world.till(x,y,z);if(ok)logLine('The earth opens into quiet rows.');return ok;}
 addEventListener('keydown',e=>{if(e.code!=='KeyE'||e.repeat||!session.started||!world.waking||!crafting.hidden||!inventory.hidden||e.target.matches?.('input,textarea,[contenteditable="true"]'))return;farmInteract(targetBlock(world,camera.position,camera.getWorldDirection(new THREE.Vector3())));});
 let farmLast=performance.now();setInterval(()=>{const now=performance.now(),dt=Math.min(1,(now-farmLast)/1000);farmLast=now;if(session.started)updateCrops(dt);},200);
@@ -1172,3 +1189,72 @@ const syncGuest=guestMessage;guestMessage=function(m){
 };
 setInterval(()=>{if(net.mode==='host'&&net.ready&&session.started)broadcast({type:'clock-sync',clock:{seconds:rhythm.seconds,day:rhythm.day}});},2000);
 window.grin.netValidation.guest=m=>guestMessage(m);
+
+// Fair-game farming: state belongs to the host, never to a planter's identity.
+let farmRevision=0,farmSeen=-1,farmDirty=false;
+function farmSnapshot(){return {revision:farmRevision,clock:farmClock,items:[...crops.values()].map(({x,y,z,wild,born})=>({x,y,z,wild,age:Math.max(0,farmClock-born)})),wildHarvested:[...wildHarvested]};}
+function publishFarm(){farmRevision++;farmDirty=false;if(net.mode==='host')broadcast({type:'farm-state',farm:farmSnapshot()});}
+function removeFarmCrop(key){
+ const p=crops.get(key);if(!p)return false;
+ if(p.wild)wildHarvested.add(key);
+ disposeCrop(p);crops.delete(key);farmDirty=true;return true;
+}
+function receiveFarm(s,initial=false){
+ if(!s||!Number.isSafeInteger(s.revision)||s.revision<0||(!initial&&s.revision<farmSeen)||!bounded(s.clock,0,1e10)||!limited(s.items)||!limited(s.wildHarvested))return false;
+ if(!s.items.every(p=>coordinate(p)&&typeof p.wild==='boolean'&&bounded(p.age,0,1e10))||!s.wildHarvested.every(k=>typeof k==='string'&&/^-?\d+:[0-9]+:-?\d+$/.test(k)))return false;
+ farmSeen=s.revision;farmClock=s.clock;
+ const keys=new Set(s.items.map(p=>cropKey(p.x,p.y,p.z)));
+ for(const [key,p] of crops)if(!keys.has(key)){disposeCrop(p);crops.delete(key);}
+ wildHarvested.clear();for(const key of s.wildHarvested)wildHarvested.add(key);
+ for(const p of s.items){const c=createCrop(p.x,p.y,p.z,p.wild);c.wild=p.wild;c.born=farmClock-p.age;c.stage=-1;drawCrop(c);}
+ return true;
+}
+function approveFarm(d,who){
+ if(!coordinate(d)||d.realm!=='waking'||!['plant','harvest'].includes(d.action))return false;
+ const p=net.mode==='solo'||who===net.peer?.id?ownState():net.people.get(who);
+ if(!p||p.realm!=='waking'||Math.hypot(p.x-d.x,p.y-d.y,p.z-d.z)>6)return false;
+ const key=cropKey(d.x,d.y,d.z),crop=crops.get(key);
+ // Only world state matters. No owner, allow-list, or planter permission.
+ if(d.action==='harvest'&&(!crop||cropStage(crop)<3||!cellValue(d)||cellValue({...d,y:d.y+1})))return false;
+ if(d.action==='plant'&&(crop||cellValue(d)!==17||cellValue({...d,y:d.y+1})))return false;
+ const bag=net.mode==='solo'||who===net.peer?.id?player.materials:toolBag(d,who);if(!bag)return false;
+ if(d.action==='plant'){
+  if(!(bag['sunmeadow seeds']>0))return false;
+  bag['sunmeadow seeds']--;createCrop(d.x,d.y,d.z);farmDirty=true;
+ }else{
+  // Delete before awarding: a second request observes no crop and earns nothing.
+  removeFarmCrop(key);bag['sunmeadow grain']=(bag['sunmeadow grain']||0)+1;bag['sunmeadow seeds']=(bag['sunmeadow seeds']||0)+2;
+ }
+ publishFarm();refreshInventory();return true;
+}
+function requestFarm(t,action){
+ const d={x:t.x,y:t.y,z:t.z,realm:'waking',action,crafts:craftHistory.slice(),craftBase};
+ if(net.mode!=='guest')return approveFarm(d,net.peer?.id);
+ if(!net.ready)return false;
+ send(net.host,{type:'farm-request',delta:d,request:++net.serial});return true;
+}
+const farmSend=send;send=function(c,m){if(m?.type==='welcome')m={...m,farm:farmSnapshot()};return farmSend(c,m);};
+const farmHost=hostMessage;hostMessage=function(c,m){
+ if(m?.type==='farm-request'){
+  if(!c.psName||!Number.isSafeInteger(m.request)||m.request<=0)return;
+  if(m.request>(c.psFarmRequest||0)){c.psFarmRequest=m.request;approveFarm(m.delta,c.peer);}
+  // Reuse the existing checkpoint + authoritative ledger path, not yield receipts.
+  farmHost(c,{type:'reconcile',request:m.request});return;
+ }
+ farmHost(c,m);
+};
+const farmGuest=guestMessage;guestMessage=function(m){
+ if(m?.type==='farm-state'){if(net.mode==='guest')receiveFarm(m.farm);return;}
+ if(m?.type==='welcome'&&m.seed===seed)receiveFarm(m.farm,true);
+ farmGuest(m);
+};
+// Edits remove plants immediately even if nobody is looking or the host chunk is absent.
+const farmApply=applyDelta;applyDelta=function(d){
+ farmApply(d);if(net.mode==='guest'||d.realm!=='waking')return;
+ const removed=(!cellValue(d)&&removeFarmCrop(cropKey(d.x,d.y,d.z)))|
+  (!!cellValue(d)&&removeFarmCrop(cropKey(d.x,d.y-1,d.z)));
+ if(removed)publishFarm();
+};
+const farmRemove=world.remove.bind(world);world.remove=function(x,y,z){const id=farmRemove(x,y,z);if(id&&net.mode==='solo'&&world.waking&&removeFarmCrop(cropKey(x,y,z)))publishFarm();return id;};
+window.grin.farming.harvest=p=>harvestCrop(p);window.grin.farming.interact=t=>farmInteract(t);
+window.grin.netValidation.receive=(c,m)=>hostMessage(c,m);window.grin.netValidation.guest=m=>guestMessage(m);
