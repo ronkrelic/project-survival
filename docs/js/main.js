@@ -1160,7 +1160,7 @@ window.grin.moments={record:recordMoment,get records(){return moments.map(m=>({.
 window.grin.netValidation.guest=m=>guestMessage(m);
 
 // Stage Fourteen, batch two: a small host anchor; ordinary drift never reverses time.
-const clockSync={anchor:null,received:0,sent:0};
+const clockSync={anchor:null,received:0};
 function clockCorrection(error,dt){
  if(Math.abs(error)>=8)return {snap:true,advance:error};
  return {snap:false,advance:dt*Math.max(-.1,Math.min(.1,error*.2))};
@@ -1170,7 +1170,7 @@ function advanceSharedClock(dt){
  if(net.mode==='guest'&&clockSync.anchor!==null){
   const local=(rhythm.day-1)*DAY_SECONDS+rhythm.seconds;
   const target=clockSync.anchor+(performance.now()-clockSync.received)/1000;
-  const correction=clockCorrection(target-local,dt);
+  const correction=clockCorrection(target-local-dt,dt);
   if(correction.snap){const total=Math.max(0,target);rhythm.day=1+Math.floor(total/DAY_SECONDS);rhythm.seconds=total%DAY_SECONDS;return;}
   step+=correction.advance;
  }
@@ -1257,4 +1257,53 @@ const farmApply=applyDelta;applyDelta=function(d){
 };
 const farmRemove=world.remove.bind(world);world.remove=function(x,y,z){const id=farmRemove(x,y,z);if(id&&net.mode==='solo'&&world.waking&&removeFarmCrop(cropKey(x,y,z)))publishFarm();return id;};
 window.grin.farming.harvest=p=>harvestCrop(p);window.grin.farming.interact=t=>farmInteract(t);
+window.grin.netValidation.receive=(c,m)=>hostMessage(c,m);window.grin.netValidation.guest=m=>guestMessage(m);
+
+// Food remains local care, but its material costs must survive host-ledger rebuilds.
+// Mirror the existing placement reservation: project only expenses not yet acknowledged.
+const foodPending=new Map();
+function foodChange(action,name){
+ if(action==='eat'&&name==='sunmeadow grain')return {cost:{[name]:1},gain:{}};
+ if(action==='eat'&&cookedFoods[name])return {cost:{[name]:1},gain:{}};
+ const r=action==='cook'&&recipes.find(r=>r.result===name&&r.hearth);
+ return r?{cost:r.cost,gain:{[name]:r.count||1}}:null;
+}
+function recordFood(action,name){
+ if(net.mode!=='guest')return;
+ const request=++net.serial,change=foodChange(action,name);foodPending.set(request,change);
+ send(net.host,{type:'food-request',request,delta:{realm:'waking',action,name,crafts:craftHistory.slice(),craftBase}});
+}
+function canRequestFood(){return net.mode!=='guest'||(net.ready&&!foodPending.size);}
+const ledgerEat=nourishment.eat.bind(nourishment);nourishment.eat=function(){if(!canRequestFood())return false;const ok=ledgerEat();if(ok)recordFood('eat','sunmeadow grain');return ok;};
+const ledgerCooked=eatCooked;eatCooked=function(name){if(!canRequestFood())return false;const ok=ledgerCooked(name);if(ok)recordFood('eat',name);return ok;};
+const ledgerCraft=craftItem;craftItem=function(name){const food=recipes.some(r=>r.result===name&&r.hearth);if(food&&!canRequestFood())return false;const ok=ledgerCraft(name);if(ok&&food)recordFood('cook',name);return ok;};
+const foodHost=hostMessage;hostMessage=function(c,m){
+ if(m?.type==='food-request'){
+  if(!c.psName||!Number.isSafeInteger(m.request)||m.request<=0)return;
+  if(m.request>(c.psFoodRequest||0)){
+   c.psFoodRequest=m.request;const d=m.delta||{},change=foodChange(d.action,d.name),p=net.people.get(c.peer);
+   if(change&&p?.realm==='waking'&&(d.action!=='cook'||(ritual.lit&&Math.hypot(p.x-wakingHearth.position.x,p.y-wakingHearth.position.y,p.z-wakingHearth.position.z)<=5))){
+    const bag=toolBag(d,c.peer);
+    if(bag&&Object.entries(change.cost).every(([k,n])=>(bag[k]||0)>=n)){
+     for(const [k,n] of Object.entries(change.cost))bag[k]-=n;
+     for(const [k,n] of Object.entries(change.gain))bag[k]=(bag[k]||0)+n;
+    }
+   }
+  }
+  foodHost(c,{type:'reconcile',request:m.request});return;
+ }
+ foodHost(c,m);
+};
+const foodGuest=guestMessage;guestMessage=function(m){
+ foodGuest(m);
+ if(m?.type==='welcome')foodPending.clear();
+ if(m?.type!=='ledger'||!uuid(m.worldId)||!validBag(m.bag)||!Number.isSafeInteger(m.craftCount)||m.craftCount<0)return;
+ for(const [request,change] of foodPending){
+  if(request<=(m.through||0)){foodPending.delete(request);continue;}
+  for(const [k,n] of Object.entries(change.cost))player.materials[k]=Math.max(0,(player.materials[k]||0)-n);
+  for(const [k,n] of Object.entries(change.gain))player.materials[k]=(player.materials[k]||0)+n;
+ }
+ refreshInventory();
+};
+window.grin.crafting.craft=name=>craftItem(name);window.grin.cooking.eat=name=>eatCooked(name);
 window.grin.netValidation.receive=(c,m)=>hostMessage(c,m);window.grin.netValidation.guest=m=>guestMessage(m);
