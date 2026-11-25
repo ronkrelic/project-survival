@@ -6,6 +6,8 @@ import {Mining} from './mining.js';
 import {createMusic} from './music.js';
 import {GARMENTS,WARMTH,coldStep,cleanWorn,validWorn,validMoments,keepMoment,backfillMoments,dayPhase,MOMENT_LABELS} from './comfort.js';
 import {validPlaces,changePlace,forgetPlace,projectPlaces,createPersonalPages,PLACE_MOMENT} from './memories.js';
+import {loadAtlas,atlasTexture} from './terrain-atlas.js';
+const terrainAtlasReady=loadAtlas();
 let personalPages=null;
 // Capture before existing game shortcuts, including chat and movement.
 addEventListener('keydown',e=>{if(personalPages?.active)personalPages.key(e);},true);
@@ -36,6 +38,8 @@ document.body.style.background="#090d20";
 const sky=new THREE.Mesh(new THREE.SphereGeometry(800,32,20),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:{},vertexShader:`varying vec3 ray;void main(){ray=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`varying vec3 ray;void main(){vec3 d=normalize(ray);float t=pow(max(d.y,0.),.48);vec3 c=mix(vec3(.92,.65,.54),vec3(.15,.18,.34),t);vec3 sun=normalize(vec3(.26,.075,-1.));float a=max(dot(d,sun),0.);c=mix(vec3(.92,.71,.62),c,smoothstep(-.10,.16,d.y));gl_FragColor=vec4(c,1.);}` }));
 scene.add(sky);
 const world=new World(scene,seed);
+let terrainTexturesReady=false;
+terrainAtlasReady.then(({levels})=>{world.material.map=atlasTexture(THREE,levels);world.material.needsUpdate=true;terrainTexturesReady=true;});
 const player=new Player(camera,renderer.domElement,world,{x:.5,y:terrainHeight(0,0,seed)+1,z:.5});
 const mining=new Mining(scene,camera,world,player,renderer.domElement);
 
@@ -127,7 +131,7 @@ sky.material.fragmentShader=sky.material.fragmentShader.replace('varying vec3 ra
 // Preserve the baked matte voxel shading and luminous flora, but tint terrain at night.
 world.material.onBeforeCompile=shader=>{shader.uniforms.phaseLight={value:0};shader.uniforms.firstFire={value:0};shader.uniforms.wakingNight={value:0};shader.uniforms.emberPosition={value:guide.body.position};world.material.userData.shader=shader;
  shader.vertexShader='varying vec3 islandPosition;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nislandPosition=(modelMatrix*vec4(position,1.)).xyz;');
- shader.fragmentShader='uniform float wakingNight;uniform float firstFire;uniform float phaseLight;uniform vec3 emberPosition;varying vec3 islandPosition;\n'+shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat flora=step(.65,max(diffuseColor.g,diffuseColor.b))*step(diffuseColor.r,.7);float warmth=pow(max(0.,1.-distance(islandPosition,emberPosition)/18.),2.);vec3 ambient=mix(vec3(.14,.17,.30),vec3(.78,.70,.79),phaseLight);diffuseColor.rgb*=mix(ambient+warmth*vec3(1.15,.65,.24)+firstFire*pow(max(0.,1.-distance(islandPosition,vec3(6.,41.,-6.))/15.),2.)*vec3(1.6,.65,.2),vec3(.9+wakingNight*.22),flora);');};
+ shader.fragmentShader='uniform float wakingNight;uniform float firstFire;uniform float phaseLight;uniform vec3 emberPosition;varying vec3 islandPosition;\n'+shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat flora=step(.65,max(vColor.g,vColor.b))*step(vColor.r,.7);float warmth=pow(max(0.,1.-distance(islandPosition,emberPosition)/18.),2.);vec3 ambient=mix(vec3(.14,.17,.30),vec3(.78,.70,.79),phaseLight);diffuseColor.rgb*=mix(ambient+warmth*vec3(1.15,.65,.24)+firstFire*pow(max(0.,1.-distance(islandPosition,vec3(6.,41.,-6.))/15.),2.)*vec3(1.6,.65,.2),vec3(.9+wakingNight*.22),flora);');};
 function updateSky(dt){if(ritual.lit){ritual.elapsed=Math.min(90,ritual.elapsed+dt);const t=ritual.elapsed/90;phase.value=ritual.start+(1-ritual.start)*(t*t*(3-2*t));}else {phase.value=THREE.MathUtils.damp(phase.value,attention.score/100*phase.ceiling,.35,dt);phase.value=Math.min(phase.ceiling,phase.value);}phase.name=phase.value===1?'full dawn':phase.value<.22?'night':phase.value<.56?'violet pre-dawn':'rosy cusp';sky.material.uniforms.progress.value=phase.value;
  fogBase.copy(nightFog).lerp(violetFog,Math.min(1,phase.value/.38));if(phase.value>.38)fogBase.lerp(dawnFog,(phase.value-.38)/.62);
  if(world.material.userData.shader){world.material.userData.shader.uniforms.phaseLight.value=phase.value;world.material.userData.shader.uniforms.firstFire.value=ritual.lit?1:0;}
@@ -300,7 +304,7 @@ function updateHUD(dt){
 }
 
 let last=performance.now();
-function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;world.update(player.x,player.z);if(world.loaded&&!session.started){wakeButton.disabled=false;wakeHint.textContent='Ready when you are.';}if(world.loaded&&session.started){nourishment.update(dt);if(!crossing.veil){if(nourishment.faintTime)player.floatUncontrolled(dt,true);else player.update(dt);}updateRitual(dt);updateCrossing(dt);if(!crossing.veil&&!nourishment.faintTime)mining.update(dt);attention.update();guide.update(dt);}updateSky(dt);updateWeather(rhythm.seconds);updateHUD(dt);
+function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;if(terrainTexturesReady)world.update(player.x,player.z);if(world.loaded&&!session.started){wakeButton.disabled=false;wakeHint.textContent='Ready when you are.';}if(world.loaded&&session.started){nourishment.update(dt);if(!crossing.veil){if(nourishment.faintTime)player.floatUncontrolled(dt,true);else player.update(dt);}updateRitual(dt);updateCrossing(dt);if(!crossing.veil&&!nourishment.faintTime)mining.update(dt);attention.update();guide.update(dt);}updateSky(dt);updateWeather(rhythm.seconds);updateHUD(dt);
  const rim=world.waking?0:crossing.manifest>0&&player.z<-96?0:THREE.MathUtils.smoothstep(islandRadius(player.x,player.z),.55,1);const held=player.mistStrength||0;scene.fog.density=.012-phase.value*.004+rim*.034+held*.075;
  scene.fog.color.copy(fogBase).lerp(new THREE.Color(0xffe5cf),held*.55);
  sky.position.copy(camera.position);renderer.render(scene,camera);}
