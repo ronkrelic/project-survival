@@ -5,6 +5,14 @@ import {terrainHeight,wakingHeight,wakingSurface,hash,islandRadius,sparkNodes} f
 import {Mining} from './mining.js';
 import {createMusic} from './music.js';
 import {GARMENTS,WARMTH,coldStep,cleanWorn,validWorn,validMoments,keepMoment,backfillMoments,dayPhase,MOMENT_LABELS} from './comfort.js';
+import {validPlaces,changePlace,forgetPlace,projectPlaces,createPersonalPages,PLACE_MOMENT} from './memories.js';
+let personalPages=null;
+// Capture before existing game shortcuts, including chat and movement.
+addEventListener('keydown',e=>{if(personalPages?.active)personalPages.key(e);},true);
+for(const type of ['mousedown','click','wheel'])addEventListener(type,e=>{
+ const panel=personalPages?.active;if(!panel||panel.contains(e.target))return;
+ e.preventDefault();e.stopImmediatePropagation();
+},{capture:true,passive:false});
 // Batch Three - Relic, November 23, 2026. Local comfort settings.
 const settings={sfx:1,music:1,sensitivity:1};
 let settingsPanel=null;
@@ -34,7 +42,7 @@ const mining=new Mining(scene,camera,world,player,renderer.domElement);
 
 // The island assembles behind the curtain; identity lasts only for this session.
 const session={name:'',started:false};
-let worn={body:null,head:null},moments=[];
+let worn={body:null,head:null},moments=[],places=[];
 const comfort={cold:0,wet:0};
 const curtain=document.getElementById('waking'),wakeButton=document.getElementById('wake'),nameInput=document.getElementById('character-name'),wakeHint=document.getElementById('wake-hint');
 wakeButton.addEventListener('click',()=>{
@@ -643,7 +651,7 @@ const itemNames=new Set([...Object.keys(GARMENTS),'workbench','door','fence','la
 function validBag(b){return record(b)&&Object.keys(b).length<=itemNames.size&&Object.entries(b).every(([k,n])=>itemNames.has(k)&&Number.isSafeInteger(n)&&bounded(n,0,1e9));}
 const coordinate=p=>record(p)&&[p.x,p.z].every(n=>Number.isInteger(n)&&bounded(n,-100000,100000))&&Number.isInteger(p.y)&&bounded(p.y,0,111);
 const limited=a=>Array.isArray(a)&&a.length<=100000;
-function validPersonal(p){return record(p)&&(p.worn===undefined||validWorn(p.worn))&&(p.moments===undefined||validMoments(p.moments))&&p.version===1&&p.seed===seed&&p.crossed===true&&uuid(p.identity)&&shortText(p.name)&&shortText(p.guideName)&&validBag(p.inventory)&&bounded(p.hunger,0,100)&&bounded(p.health,1,100)&&record(p.position)&&[p.position.x,p.position.z].every(n=>bounded(n,-100000,100000))&&bounded(p.position.y,-1000,1000)&&Array.isArray(p.crafts)&&p.crafts.length<=1024&&p.crafts.every(k=>itemNames.has(k))&&Number.isSafeInteger(p.craftBase??0)&&(p.craftBase??0)>=0;}
+function validPersonal(p){return record(p)&&(p.worn===undefined||validWorn(p.worn))&&(p.moments===undefined||validMoments(p.moments))&&(p.places===undefined||validPlaces(p.places))&&p.version===1&&p.seed===seed&&p.crossed===true&&uuid(p.identity)&&shortText(p.name)&&shortText(p.guideName)&&validBag(p.inventory)&&bounded(p.hunger,0,100)&&bounded(p.health,1,100)&&record(p.position)&&[p.position.x,p.position.z].every(n=>bounded(n,-100000,100000))&&bounded(p.position.y,-1000,1000)&&Array.isArray(p.crafts)&&p.crafts.length<=1024&&p.crafts.every(k=>itemNames.has(k))&&Number.isSafeInteger(p.craftBase??0)&&(p.craftBase??0)>=0;}
 function validWorld(w){return record(w)&&w.version===1&&w.seed===seed&&record(w.flags)&&w.flags.crossed===true&&typeof w.flags.lit==='boolean'&&typeof w.flags.named==='boolean'&&shortText(w.flags.guideName)&&record(w.clock)&&bounded(w.clock.seconds,0,840)&&Number.isSafeInteger(w.clock.day)&&w.clock.day>0&&limited(w.deltas)&&w.deltas.every(d=>coordinate(d)&&['island','waking'].includes(d.realm)&&(!d.op||d.op==='till'||(d.op==='place'&&[1,2,5,12,14,15,19,20,21,22,23,24].includes(d.id))))&&limited(w.soil)&&w.soil.every(e=>Array.isArray(e)&&e.length===2&&coordinate(e[1])&&e[0]==='waking:'+cropKey(e[1].x,e[1].y,e[1].z))&&limited(w.crops)&&w.crops.every(p=>coordinate(p)&&typeof p.wild==='boolean'&&bounded(p.age,0,1e10))&&limited(w.wildHarvested)&&w.wildHarvested.every(k=>typeof k==='string'&&/^-?\d+:[0-9]+:-?\d+$/.test(k)&&coordinate(Object.fromEntries(k.split(':').map((n,i)=>[['x','y','z'][i],Number(n)]))))&&record(w.guests)&&Object.keys(w.guests).length<=1000&&Object.entries(w.guests).every(([k,g])=>uuid(k)&&record(g)&&validBag(g.bag)&&Number.isSafeInteger(g.craftCount)&&g.craftCount>=0);}
 function matchedSave(){try{const raw=localStorage.getItem(SAVE_PAIR);if(!raw||raw.length>20000000)return null;const s=JSON.parse(raw);return s?.version===2&&uuid(s.worldId)&&Number.isSafeInteger(s.generation)&&s.generation>0&&s.world?.worldId===s.worldId&&s.person?.worldId===s.worldId&&s.world?.generation===s.generation&&s.person?.generation===s.generation&&validWorld(s.world)&&validPersonal(s.person)?s:null;}catch{return null;}}
 function readSave(key){const s=matchedSave();return key===SAVE_WORLD?s?.world||null:key===SAVE_PERSON?s?.person||null:null;}
@@ -1107,7 +1115,7 @@ function tickWarmth(dt){
  const time=(rhythm.day-1)*DAY_SECONDS+rhythm.seconds;
  comfort.cold=coldStep(comfort.cold,dt,{seconds:rhythm.seconds,shower:showerStrength(time),frost:biomeAt(player.x,player.z,seed)==='Frost Peaks',wet:comfort.wet>0,hearth:nearLitHearth(),worn});
 }
-function echoMoment(id){logLine('A moment kept: '+(MOMENT_LABELS[id]||id)+'.');}
+function echoMoment(id){logLine('A moment kept: '+(id==='firstPlaceNamed'?PLACE_MOMENT:MOMENT_LABELS[id]||id)+'.');}
 function recordMoment(id){
  const name=id==='guideNamed'?crossing.name:id==='characterNamed'?session.name:undefined;
  if(!keepMoment(moments,id,rhythm.day,world.waking?dayPhase(rhythm.seconds):phase.value>=.22?'dawn':'night',name))return false;
@@ -1307,3 +1315,33 @@ const foodGuest=guestMessage;guestMessage=function(m){
 };
 window.grin.crafting.craft=name=>craftItem(name);window.grin.cooking.eat=name=>eatCooked(name);
 window.grin.netValidation.receive=(c,m)=>hostMessage(c,m);window.grin.netValidation.guest=m=>guestMessage(m);
+
+// Stage Fourteen, final batch: places and memories never enter a wire envelope.
+const placesSnapshot=personalSnapshot;personalSnapshot=function(){return {...placesSnapshot(),places:places.map(p=>({...p}))};};
+const placesLoad=loadPersonal;loadPersonal=function(s,position=false){
+ const ok=placesLoad(s,position);if(!ok)return false;places=(s.places||[]).map(p=>({...p}));return true;
+};
+const canNamePlace=()=>session.started&&world.waking&&!crossing.veil&&!player.mistCatch&&!nourishment.faintTime;
+personalPages=createPersonalPages({
+ read:()=>({moments,places,spot:{x:player.x,y:player.y,z:player.z},canName:canNamePlace()}),
+ prepare(){closeSettings();inventory.hidden=true;crafting.hidden=true;finishTyping();mining.cancel();player.keys.clear();player.jumpQueued=false;document.exitPointerLock?.();},
+ save:saveGame,
+ change(index,text,spot){
+  if(!canNamePlace())return 'invalid';
+  const result=changePlace(places,index,text,spot,rhythm.day,dayPhase(rhythm.seconds));
+  if(result==='created')recordMoment('firstPlaceNamed');
+  if(result==='created'||result==='renamed')saveGame();return result;
+ },
+ forget(index){if(forgetPlace(places,index))saveGame();}
+});
+const personalHUD=updateHUD;updateHUD=function(dt){
+ personalHUD(dt);
+ const visible=session.started&&!crossing.veil&&!player.mistCatch&&!nourishment.faintTime&&naming.hidden;
+ const showLabels=visible&&world.waking&&settingsPanel.hidden&&inventory.hidden&&crafting.hidden&&!personalPages.active;
+ const projected=showLabels?projectPlaces(places,camera.position,(x,y,z)=>{
+  const q=new THREE.Vector4(x,y,z,1).applyMatrix4(camera.matrixWorldInverse).applyMatrix4(camera.projectionMatrix);
+  return {x:q.x/q.w,y:q.y/q.w,z:q.z/q.w,w:q.w};
+ },innerWidth,innerHeight):[];
+ personalPages.update(visible,projected);
+};
+window.grin.saving.personalSnapshot=personalSnapshot;
