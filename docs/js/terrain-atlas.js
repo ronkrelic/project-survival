@@ -20,7 +20,8 @@ export function assembleAtlas(cells=[]){
     if(level>=4||!source){const a=averages[cell];ctx.fillStyle='rgb('+a+','+a+','+a+')';ctx.fillRect(x,y,step,step);continue;}
     const gutter=GUTTER>>level,content=CONTENT>>level,tile=canvas(content),tc=tile.getContext('2d');
     tc.drawImage(source.canvas,0,0,content,content);
-    tc.globalAlpha=1-[1,.8,.55,.3][level];tc.fillStyle='rgb('+source.average+','+source.average+','+source.average+')';tc.fillRect(0,0,content,content);
+    const pixels=tc.getImageData(0,0,content,content),d=pixels.data,fade=[1,.8,.55,.3][level];
+    for(let i=0;i<d.length;i+=4){const v=Math.round(source.average+(d[i]-source.average)*fade);d[i]=d[i+1]=d[i+2]=v;d[i+3]=255;}tc.putImageData(pixels,0,0);
     ctx.drawImage(tile,x+gutter,y+gutter);
     // Extrude all four edges and all four corners afresh at each detailed level.
     ctx.drawImage(tile,0,0,1,content,x,y+gutter,gutter,content);ctx.drawImage(tile,content-1,0,1,content,x+gutter+content,y+gutter,gutter,content);
@@ -44,3 +45,4 @@ export function atlasTexture(THREE,levels){
  const texture=new THREE.CanvasTexture(levels[0]);texture.mipmaps=levels;texture.generateMipmaps=false;
  texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.anisotropy=1;texture.colorSpace=THREE.SRGBColorSpace;texture.needsUpdate=true;return texture;
 }
+

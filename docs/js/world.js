@@ -26,13 +26,13 @@ export class World {
  install(data){
   const key=this.key(data.cx,data.cz);if(this.waking&&!this.wanted.has(key))return;const old=this.chunks.get(key);
   if(old&&data.revision!==old.revision)return;
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(data.positions,3));g.setAttribute('color',new THREE.BufferAttribute(data.colors,3));g.computeBoundingSphere();
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(data.positions,3));g.setAttribute('color',new THREE.BufferAttribute(data.colors,3));g.setAttribute('uv',new THREE.BufferAttribute(data.uvs,2));g.computeBoundingSphere();
   const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.BufferAttribute(data.waterPositions,3));wg.setAttribute('color',new THREE.BufferAttribute(data.waterColors,3));wg.computeBoundingSphere();
   if(old){old.object.geometry.dispose();old.object.geometry=g;old.waterObject.geometry.dispose();old.waterObject.geometry=wg;old.meshedRevision=data.revision;return;}
   if(this.waking&&data.blocks){for(const i of this.edits.get(key)||[])data.blocks[i]=0;
    for(let z=0;z<SIZE;z++)for(let x=0;x<SIZE;x++){let sun=15;for(let y=HEIGHT-1;y>=0;y--){const i=index(x,y,z);if(data.blocks[i]&&data.blocks[i]!==25)sun=0;data.light[i]=sun;}}
   }
-  const object=new THREE.Mesh(g,this.material),waterObject=new THREE.Mesh(wg,this.waterMaterial);waterObject.renderOrder=1;this.scene.add(object,waterObject);this.chunks.set(key,{...data,revision:0,meshedRevision:0,positions:null,colors:null,waterPositions:null,waterColors:null,object,waterObject});
+  const object=new THREE.Mesh(g,this.material),waterObject=new THREE.Mesh(wg,this.waterMaterial);waterObject.renderOrder=1;this.scene.add(object,waterObject);this.chunks.set(key,{...data,revision:0,meshedRevision:0,positions:null,colors:null,uvs:null,waterPositions:null,waterColors:null,object,waterObject});
   if(this.waking){const c=this.chunks.get(key);if(this.edits.has(key)){c.revision++;this.dirty.add(key);}for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dz)continue;const k=this.key(data.cx+dx,data.cz+dz),n=this.chunks.get(k);if(n){n.revision++;this.dirty.add(k);}}}
  }
  till(x,y,z){

@@ -1,3 +1,4 @@
+export {BLOCK_FACES} from './atlas-layout.js';
 // Shared block semantics; independent of terrain layout and world size.
 export const materials=Object.freeze({
  1:{name:'terrace grass',yield:'earth',seconds:.4,color:0x83a68c},
