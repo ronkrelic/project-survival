@@ -1,3 +1,4 @@
+import {t as tr} from './i18n.js';
 // Personal discoveries only: no world ledger or network dependencies.
 import {MOMENT_LABELS} from './comfort.js';
 export const PLACE_LIMIT=32,LABEL_LIMIT=8;
@@ -20,11 +21,11 @@ export const AHEAD=Object.freeze({
  firstGarmentCrafted:'a little cloth, waiting for your hands',firstGarmentWorn:'a little warmth, waiting to travel',
  firstPlaceNamed:'a place, waiting for a name'
 });
-export function memoryDate(m){return m.day===null?'before the counting':'day '+m.day+' · '+m.phase;}
+export function memoryDate(m){return m.day===null?tr('before the counting'):tr('day ')+m.day+' · '+tr(m.phase);}
 export function memoryContent(moments,places){
  const ids=new Set(moments.map(m=>m.id));return {
- kept:moments.map(m=>(m.id==='firstPlaceNamed'?PLACE_MOMENT:MOMENT_LABELS[m.id]||'a quiet moment')+(m.name?' — '+m.name:'')+' · '+memoryDate(m)),
- ahead:Object.entries(AHEAD).filter(([id])=>!ids.has(id)).map(([,hint])=>hint),
+ kept:moments.map(m=>tr(m.id==='firstPlaceNamed'?PLACE_MOMENT:MOMENT_LABELS[m.id]||'a quiet moment')+(m.name?' — '+m.name:'')+' · '+memoryDate(m)),
+ ahead:Object.entries(AHEAD).filter(([id])=>!ids.has(id)).map(([,hint])=>tr(hint)),
  places:places.map(p=>p.name+' · '+memoryDate(p))};
 }
 // project returns clip coordinates including w; reject behind-camera points explicitly.
@@ -42,25 +43,25 @@ export function createPersonalPages(api){
  '.personal-page[hidden],#personal-tools[hidden]{display:none}.personal-page h2{font-size:23px;margin:0 0 12px}.personal-page h3{font-size:15px;letter-spacing:.08em;border-bottom:1px solid #aa9475}.personal-page p{font-size:13px}.personal-page li{margin:10px 0;overflow-wrap:anywhere}'+
  '.personal-page button{display:inline-block;margin:6px;padding:8px 14px;background:#d9c59b;color:#514c49;border:1px solid #aa9475;border-radius:8px;font:14px Georgia}.personal-page input{width:100%;background:#f7ecd7;color:#514c49;border:1px solid #aa9475;font:18px Georgia}.personal-page :focus-visible,#personal-tools :focus-visible{outline:2px solid #d49b54;outline-offset:3px}'+
  '.private-place-label{position:fixed;z-index:7;pointer-events:none;color:#eadcc5;background:#514c4940;padding:3px 8px;border-radius:10px;font:13px Georgia;letter-spacing:.04em;text-shadow:0 1px 6px #514c49;transform:translate(-50%,-100%);max-width:160px;overflow-wrap:anywhere}';document.head.append(style);
- const tools=document.createElement('nav');tools.id='personal-tools';tools.setAttribute('aria-label','Personal discoveries');tools.hidden=true;
- const button=(text,parent,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=fn;parent.append(b);return b;};
- const page=(id,title)=>{const p=document.createElement('section');p.id=id;p.className='personal-page';p.hidden=true;p.setAttribute('role','dialog');p.setAttribute('aria-modal','true');p.setAttribute('aria-labelledby',id+'-title');const h=document.createElement('h2');h.id=id+'-title';h.textContent=title;p.append(h);document.body.append(p);return p;};
- const book=page('personal-memories','Memories'),editor=page('personal-place','A name for this place');
- const note=document.createElement('p');note.textContent='Kept only by you, in this browser. The world keeps moving.';book.append(note);
- const sections={};for(const title of ['KEPT','AHEAD','PLACES']){const h=document.createElement('h3'),list=document.createElement('ul');h.textContent=title;book.append(h,list);sections[title]=list;}
- const input=document.createElement('input');input.id='private-place-name';input.maxLength=16;input.autocomplete='off';const label=document.createElement('label');label.htmlFor=input.id;label.textContent='Place name · up to 16 characters';editor.append(label,input);
- const help=document.createElement('p');help.textContent='A blank name leaves things as they are.';editor.append(help);
+ const tools=document.createElement('nav');tools.id='personal-tools';tools.setAttribute('aria-label',tr('Personal discoveries'));tools.hidden=true;
+ const button=(text,parent,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=tr(text);b.onclick=fn;parent.append(b);return b;};
+ const page=(id,title)=>{const p=document.createElement('section');p.id=id;p.className='personal-page';p.hidden=true;p.setAttribute('role','dialog');p.setAttribute('aria-modal','true');p.setAttribute('aria-labelledby',id+'-title');const h=document.createElement('h2');h.id=id+'-title';h.textContent=tr(title);p.append(h);document.body.append(p);return p;};
+ const book=page('personal-memories',tr('Memories')),editor=page('personal-place',tr('A name for this place'));
+ const note=document.createElement('p');note.textContent=tr('Kept only by you, in this browser. The world keeps moving.');book.append(note);
+ const sections={};for(const title of ['KEPT','AHEAD','PLACES']){const h=document.createElement('h3'),list=document.createElement('ul');h.textContent=tr(title);book.append(h,list);sections[title]=list;}
+ const input=document.createElement('input');input.id='private-place-name';input.maxLength=16;input.autocomplete='off';const label=document.createElement('label');label.htmlFor=input.id;label.textContent=tr('Place name · up to 16 characters');editor.append(label,input);
+ const help=document.createElement('p');help.textContent=tr('A blank name leaves things as they are.');editor.append(help);
  const status=document.createElement('p');status.setAttribute('role','status');editor.append(status);
  let active=null,returnTo=null,index=null,spot=null,bookStamp='';
  function close(){if(!active)return;active.hidden=true;active=null;for(const b of [nameButton,bookButton])b.setAttribute('aria-expanded','false');api.save();returnTo?.focus();}
  function open(p,from){api.prepare();if(active)active.hidden=true;active=p;returnTo=from;p.hidden=false;nameButton.setAttribute('aria-expanded',String(p===editor));bookButton.setAttribute('aria-expanded',String(p===book));(p.querySelector('input,button')||p).focus();}
- function render(){const s=api.read();bookStamp=JSON.stringify([s.moments,s.places]);const content=memoryContent(s.moments,s.places);for(const [key,rows,empty] of [['KEPT',content.kept,'The page is quiet, for now.'],['AHEAD',content.ahead,'The road still has room for ordinary wonders.'],['PLACES',content.places,'No places named yet.']]){
-  const list=sections[key];list.replaceChildren();for(const [i,text] of (rows.length?rows:[empty]).entries()){const li=document.createElement('li');li.append(document.createTextNode(text));if(key==='PLACES'&&rows.length){button('Rename',li,()=>name(i));button('Forget',li,()=>{api.forget(i);render();});}list.append(li);}
+ function render(){const s=api.read();bookStamp=JSON.stringify([s.moments,s.places]);const content=memoryContent(s.moments,s.places);for(const [key,rows,empty] of [['KEPT',content.kept,tr('The page is quiet, for now.')],['AHEAD',content.ahead,tr('The road still has room for ordinary wonders.')],['PLACES',content.places,tr('No places named yet.')]]){
+  const list=sections[key];list.replaceChildren();for(const [i,text] of (rows.length?rows:[empty]).entries()){const li=document.createElement('li');li.append(document.createTextNode(text));if(key==='PLACES'&&rows.length){button(tr('Rename'),li,()=>name(i));button(tr('Forget'),li,()=>{api.forget(i);render();});}list.append(li);}
  }}
  function name(i=null){const s=api.read();if(i===null&&!s.canName)return;index=i;spot={...s.spot};input.value=i===null?'':s.places[i].name;status.textContent='';open(editor,i===null?nameButton:bookButton);input.focus();}
- button('Keep this name',editor,()=>{const result=api.change(index,input.value,spot);if(result==='full'){status.textContent='Thirty-two places kept. Forget one in Memories to make room.';return;}if(['invalid','missing'].includes(result)){status.textContent='This place is out of reach for now.';return;}close();});
- button('Cancel / Esc',editor,close);button('Close / Esc',book,close);
- const nameButton=button('Name this place',tools,()=>name()),bookButton=button('Memories',tools,()=>{render();open(book,bookButton);});
+ button(tr('Keep this name'),editor,()=>{const result=api.change(index,input.value,spot);if(result==='full'){status.textContent=tr('Thirty-two places kept. Forget one in Memories to make room.');return;}if(['invalid','missing'].includes(result)){status.textContent=tr('This place is out of reach for now.');return;}close();});
+ button(tr('Cancel / Esc'),editor,close);button(tr('Close / Esc'),book,close);
+ const nameButton=button(tr('Name this place'),tools,()=>name()),bookButton=button(tr('Memories'),tools,()=>{render();open(book,bookButton);});
  for(const [b,p] of [[nameButton,editor],[bookButton,book]]){b.setAttribute('aria-controls',p.id);b.setAttribute('aria-expanded','false');}
  document.body.append(tools);
  const labels=Array.from({length:LABEL_LIMIT},()=>{const n=document.createElement('div');n.className='private-place-label';n.setAttribute('aria-hidden','true');n.hidden=true;document.body.append(n);return n;});
@@ -68,5 +69,5 @@ export function createPersonalPages(api){
   const all=[...active.querySelectorAll('input,button')].filter(n=>!n.disabled),first=all[0],last=all.at(-1);
   if(!active.contains(document.activeElement)){e.preventDefault();first.focus();}
   else if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
- }},update(visible,projected){if(active===book){const s=api.read();if(bookStamp!==JSON.stringify([s.moments,s.places]))render();}tools.hidden=!visible;nameButton.disabled=!api.read().canName;nameButton.title=api.read().canName?'Name this place':'Place names begin beyond the crossing.';if(!visible&&active)close();labels.forEach((n,i)=>{const q=visible&&!active?projected[i]:null;n.hidden=!q;if(!q)return;n.textContent=api.read().places[q.index].name;n.style.left=q.left+'px';n.style.top=q.top+'px';n.style.opacity=q.opacity;});}};
+ }},update(visible,projected){if(active===book){const s=api.read();if(bookStamp!==JSON.stringify([s.moments,s.places]))render();}tools.hidden=!visible;nameButton.disabled=!api.read().canName;nameButton.title=api.read().canName?tr('Name this place'):tr('Place names begin beyond the crossing.');if(!visible&&active)close();labels.forEach((n,i)=>{const q=visible&&!active?projected[i]:null;n.hidden=!q;if(!q)return;n.textContent=api.read().places[q.index].name;n.style.left=q.left+'px';n.style.top=q.top+'px';n.style.opacity=q.opacity;});}};
 }
